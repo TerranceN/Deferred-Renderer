@@ -5,8 +5,8 @@
       <author>Blender User</author>
       <authoring_tool>Blender 2.68.0 r58537</authoring_tool>
     </contributor>
-    <created>2013-10-07T15:55:08</created>
-    <modified>2013-10-07T15:55:08</modified>
+    <created>2013-10-07T16:29:50</created>
+    <modified>2013-10-07T16:29:50</modified>
     <unit name="meter" meter="1"/>
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -95,10 +95,24 @@
       </extra>
     </light>
   </library_lights>
-  <library_images/>
+  <library_images>
+    <image id="crate_jpg" name="crate_jpg">
+      <init_from>crate.jpg</init_from>
+    </image>
+  </library_images>
   <library_effects>
     <effect id="Material-effect">
       <profile_COMMON>
+        <newparam sid="crate_jpg-surface">
+          <surface type="2D">
+            <init_from>crate_jpg</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="crate_jpg-sampler">
+          <sampler2D>
+            <source>crate_jpg-surface</source>
+          </sampler2D>
+        </newparam>
         <technique sid="common">
           <phong>
             <emission>
@@ -108,7 +122,7 @@
               <color sid="ambient">0 0 0 1</color>
             </ambient>
             <diffuse>
-              <color sid="diffuse">0.64 0.64 0.64 1</color>
+              <texture texture="crate_jpg-sampler" texcoord="UVMap"/>
             </diffuse>
             <specular>
               <color sid="specular">0.5 0.5 0.5 1</color>
@@ -197,7 +211,9 @@
         <instance_geometry url="#Cube-mesh">
           <bind_material>
             <technique_common>
-              <instance_material symbol="Material-material" target="#Material-material"/>
+              <instance_material symbol="Material-material" target="#Material-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
             </technique_common>
           </bind_material>
         </instance_geometry>
