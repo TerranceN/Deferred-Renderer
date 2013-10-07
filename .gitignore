@@ -1,0 +1,7 @@
+*.class
+*.so
+*.dll
+*out
+*.log
+target/*
+project/target/*
