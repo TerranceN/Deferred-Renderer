@@ -8,11 +8,17 @@ import org.lwjgl.opengl.{
 import org.lwjgl.input._
 import scala.util.Random
 import scala.math._
+import org.lwjgl.util.glu.GLU._
 
+import textures._
+import shaders._
 
 class GS_Game extends GameState {
-  val m = Model.fromObjectFile("test2.obj")
-  val t = Texture.fromImage("crate.jpg")
+  val m = new com.awesome.models.Model("crate.dae")
+
+  val program = new ShaderProgram(
+    new VertexShader("test.vert"),
+    new FragmentShader("test.frag"))
 
   var y:Double = 0
   var angle:Double = 0
@@ -22,7 +28,15 @@ class GS_Game extends GameState {
 
   def update(deltaTime:Double) = {
     y += 1 * deltaTime
-    angle += 10 * deltaTime
+    angle += 40 * deltaTime
+  }
+
+  def checkError() {
+    val error = glGetError
+    if (error != GL_NO_ERROR) {
+      Console.println("OpenGL Error: " + error)
+      Console.println(gluErrorString(error))
+    }
   }
 
   def draw() = {
@@ -30,9 +44,15 @@ class GS_Game extends GameState {
     glClear(GL_COLOR_BUFFER_BIT)
     glClear(GL_DEPTH_BUFFER_BIT)
 
-    glTranslated(0.0f, -2 * cos(y) - 3, -10.0f)
+    glTranslated(0.0f, -2 * sin(y), -10.0f)
     glRotated(angle, 0, 1, 0)
 
+    program.bind
+
     m.draw()
+
+    ShaderProgram.useNone
+
+    checkError
   }
 }
