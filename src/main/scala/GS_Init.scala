@@ -32,6 +32,7 @@ class GS_Init extends GameState {
     glDepthFunc(GL_LEQUAL);    // Set the type of depth-test
     glShadeModel(GL_SMOOTH);   // Enable smooth shading
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);  // Nice perspective corrections
+    glEnable(GL_CULL_FACE);
 
     // next next state and kill this state
     setNextState(new GS_Game)
