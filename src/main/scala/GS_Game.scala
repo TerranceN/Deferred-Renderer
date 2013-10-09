@@ -15,7 +15,7 @@ import shaders._
 import models._
 
 class GS_Game extends GameState {
-  val m = new Model("crate.dae")
+  val m = new Model("sphere.dae")
 
   val program = new ShaderProgram(
     new VertexShader("test.vert"),
