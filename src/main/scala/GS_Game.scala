@@ -15,7 +15,8 @@ import shaders._
 import models._
 
 class GS_Game extends GameState {
-  val m = new Model("sphere.dae")
+  val m = new Model("crate.dae")
+  val m2 = new Model("sphere.dae")
 
   val program = new ShaderProgram(
     new VertexShader("test.vert"),
@@ -45,12 +46,21 @@ class GS_Game extends GameState {
     glClear(GL_COLOR_BUFFER_BIT)
     glClear(GL_DEPTH_BUFFER_BIT)
 
-    glTranslated(0.0f, -2 * sin(y), -10.0f)
-    glRotated(angle, 0, 1, 0)
-
     program.bind
 
-    m.draw()
+    glPushMatrix()
+      glTranslated(2.0f, -2 * sin(y), -10.0f)
+      glRotated(angle, 0, 1, 0)
+
+      m.draw()
+    glPopMatrix()
+
+    glPushMatrix()
+      glTranslated(-2.0f, -2 * sin(y + 3.14f), -10.0f)
+      glRotated(angle, 0, 1, 0)
+
+      m2.draw()
+    glPopMatrix()
 
     ShaderProgram.useNone
 
