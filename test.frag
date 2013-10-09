@@ -25,8 +25,8 @@ void main() {
     if (lambertTerm > ambientIntensity) {
         vec3 e = normalize(eyeVec);
         vec3 r = reflect(-l, n);
-        float specular = pow(max(dot(r, e), 0.0), 100);
-        final_color += 0.5 * vec4(specular);
+        float specular = pow(max(dot(r, e), 0.0), 20);
+        final_color += 0.2 * vec4(specular);
     }
 
     gl_FragColor = final_color;
