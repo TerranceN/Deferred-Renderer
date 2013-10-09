@@ -12,9 +12,10 @@ import org.lwjgl.util.glu.GLU._
 
 import textures._
 import shaders._
+import models._
 
 class GS_Game extends GameState {
-  val m = new com.awesome.models.Model("crate.dae")
+  val m = new Model("crate.dae")
 
   val program = new ShaderProgram(
     new VertexShader("test.vert"),
