@@ -31,8 +31,8 @@ class Texture(image:BufferedImage) {
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.getWidth, image.getHeight, 0, inputType, GL_UNSIGNED_BYTE, buf)
 
-  glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST); // Linear Filtering
-  glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST); // Linear Filtering
+  glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR); // Linear Filtering
+  glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR); // Linear Filtering
 
   glDisable(GL_TEXTURE_2D)
 
