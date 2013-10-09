@@ -4,4 +4,4 @@
 *out
 *.log
 target/*
-project/target/*
+project/*/*
