@@ -11,6 +11,7 @@ out vec3 normal;
 
 out vec3 lightDir;
 out vec3 eyeVec;
+out float distanceToLight;
 
 uniform vec2 uMousePos;
 
@@ -18,6 +19,7 @@ void main() {
     vec3 lightPosition = vec3((uMousePos / vec2(1280, 720) * 2 - vec2(1)) * 10, 11.5);
     vec4 finishedCoord = gl_ModelViewProjectionMatrix * vec4(aCoord, 1.0);
 
+    distanceToLight = length(lightPosition - finishedCoord.xyz);
     color = aColor;
     texCoord = aTexCoord;
     normal = gl_NormalMatrix * aNormal;
