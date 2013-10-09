@@ -20,12 +20,13 @@ void main() {
 
     lambertTerm = max(lambertTerm, ambientIntensity);
 
-    if (lambertTerm > 0.0) {
-        final_color += texture2D(uSampler, texCoord) * color * lambertTerm;
-        //vec3 e = normalize(eyeVec);
-        //vec3 r = reflect(-l, n);
-        //float specular = pow(max(dot(r, e), 0.0), 1);
-        //final_color += vec4(specular);
+    final_color += texture2D(uSampler, texCoord) * color * lambertTerm;
+
+    if (lambertTerm > ambientIntensity) {
+        vec3 e = normalize(eyeVec);
+        vec3 r = reflect(-l, n);
+        float specular = pow(max(dot(r, e), 0.0), 100);
+        final_color += 0.5 * vec4(specular);
     }
 
     gl_FragColor = final_color;

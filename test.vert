@@ -21,8 +21,8 @@ void main() {
     color = aColor;
     texCoord = aTexCoord;
     normal = gl_NormalMatrix * aNormal;
-    eyeVec = -finishedCoord.xyz;
-    lightDir = (lightPosition) - finishedCoord;
+    eyeVec = finishedCoord.xyz;
+    lightDir = lightPosition - finishedCoord.xyz;
 
     gl_Position = finishedCoord;
 }
