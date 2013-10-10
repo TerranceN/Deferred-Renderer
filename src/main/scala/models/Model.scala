@@ -179,21 +179,6 @@ class Model(fileName:String) {
 
     var materialObject:Material = new Material(loadColorOrTexture(diffuse), loadColorOrTexture(specular), 50);
 
-    //if ((diffuse \ "texture").length != 0) {
-    //  val samplerName = ((diffuse \ "texture")(0) \ "@texture").text
-    //  val sampler = ((file \\ "newparam") filter (x => (x \ "@sid").text == samplerName)) \ "sampler2D"
-    //  val surfaceName = (sampler \ "source").text
-    //  val surface = ((file \\ "newparam") filter (x => (x \ "@sid").text == surfaceName)) \ "surface"
-    //  val imageName = (surface \ "init_from").text
-    //  val image = ((imageLibrary \ "image") filter (x => (x \ "@id").text == imageName))
-    //  val imageFile = (image \ "init_from").text
-    //  Console.println(imageFile)
-    //  materialObject = new Material(Right(Texture.fromImage(imageFile)))
-    //} else if ((diffuse \ "color").length != 0) {
-    //  val buf = (diffuse \ "color").text.split(" ") map (_.toFloat)
-    //  materialObject = new Material(Left(new Vector4(buf(0), buf(1), buf(2), buf(3))))
-    //}
-
     val random = new Random(System.currentTimeMillis())
     if (diffuseColor.length == 0) {
       diffuseColor = Array(1.0f, 1.0f, 1.0f, 1.0f)
@@ -208,22 +193,6 @@ class Model(fileName:String) {
     }
 
     (xml \ "p").text.split(" ").grouped(if (hasTexCoords) 3 else 2) foreach { list =>
-      //val r:Float = random.nextFloat() * 0.9f + 0.1f
-      //random.nextInt(4) match {
-      //  case 0 => {
-      //    diffuseColor = Array(r, 0.0f, 0.0f, 1.0f)
-      //  }
-      //  case 1 => {
-      //    diffuseColor = Array(0.0f, r, 0.0f, 1.0f)
-      //  }
-      //  case 2 => {
-      //    diffuseColor = Array(r, r, 0.0f, 1.0f)
-      //  }
-      //  case 3 => {
-      //    diffuseColor = Array(0.0f, 0.0f, r, 1.0f)
-      //  }
-      //}
-
       val indicies = list map (_.toInt)
       val newPositions = (positions.slice(indicies(0)*3, indicies(0)*3 + 3))
       val newNormals = (normals.slice(indicies(1)*3, indicies(1)*3 + 3))
