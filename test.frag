@@ -10,8 +10,18 @@ in float distanceToLight;
 
 uniform sampler2D uSampler;
 
+uniform vec4 uDiffuseColor;
+uniform float uDiffuseTexture;
+
 void main() {
     float ambientIntensity = 0.05;
+
+    vec4 diffuse = vec4(1.0);
+    if (uDiffuseTexture > 0.5) {
+        diffuse = texture2D(uSampler, texCoord);
+    } else {
+        diffuse = uDiffuseColor;
+    }
 
     vec4 final_color = vec4(0);
 
@@ -28,7 +38,7 @@ void main() {
 
     lambertTerm = max(lambertTerm, ambientIntensity);
 
-    final_color += texture2D(uSampler, texCoord) * color * lambertTerm;
+    final_color += diffuse * lambertTerm;
 
     if (lambertTerm > ambientIntensity) {
         vec3 e = normalize(eyeVec);

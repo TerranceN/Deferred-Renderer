@@ -59,8 +59,11 @@ trait Shader {
   def loadFromFile(file:String, shaderType:Int) {
     try {
       id = glCreateShaderObjectARB(shaderType)
-      glShaderSourceARB(id, Source.fromFile(file).mkString)
+      val source = Source.fromFile(file)
+      val sourceString = source.mkString
+      glShaderSourceARB(id, sourceString)
       glCompileShaderARB(id)
+      source.close
 
       if (glGetObjectParameteriARB(id, GL_OBJECT_COMPILE_STATUS_ARB) == GL_FALSE) {
         throw new Exception("Error creating shader: " + getShaderError())

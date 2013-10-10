@@ -32,12 +32,12 @@ class Model(fileName:String) {
     val stride = 3 + 3 + 2 + 4
     val numVerticies = data.length / stride
 
-    data.grouped(stride) foreach { list =>
-      val position = "(" + list(0) + ", " + list(1) + ", " + list(2) + ")"
-      val texCoord = "(" + list(6) + ", " + list(7) + ")"
-      val color = "(" + list(8) + ", " + list(9) + ", " + list(10) + ", " + list(11) + ")"
-      Console.println(texCoord)
-    }
+    //data.grouped(stride) foreach { list =>
+    //  val position = "(" + list(0) + ", " + list(1) + ", " + list(2) + ")"
+    //  val texCoord = "(" + list(6) + ", " + list(7) + ")"
+    //  val color = "(" + list(8) + ", " + list(9) + ", " + list(10) + ", " + list(11) + ")"
+    //  Console.println(texCoord)
+    //}
 
     def checkError() {
       val error = glGetError
@@ -58,6 +58,9 @@ class Model(fileName:String) {
       val uSamplerLocation = glGetUniformLocation(program.id, "uSampler")
       val uMousePosLocation = glGetUniformLocation(program.id, "uMousePos")
 
+      val uDiffuseColorLocation = glGetUniformLocation(program.id, "uDiffuseColor")
+      val uDiffuseTextureLocation = glGetUniformLocation(program.id, "uDiffuseTexture")
+
       glUniform2f(uMousePosLocation, Mouse.getX, Mouse.getY)
 
       glEnableVertexAttribArray(aCoordLocation)
@@ -69,9 +72,12 @@ class Model(fileName:String) {
         case Right(t) => {
           t.bind
           glUniform1i(uSamplerLocation, 0);
+          glUniform1f(uDiffuseTextureLocation, 1.0f);
         }
-        case _ => {
+        case Left(color) => {
           glDisable(GL_TEXTURE_2D);
+          glUniform1f(uDiffuseTextureLocation, 0.0f);
+          glUniform4f(uDiffuseColorLocation, color.x, color.y, color.z, color.w)
         }
       }
 
@@ -95,6 +101,8 @@ class Model(fileName:String) {
   // load from file
   var file = XML.loadFile(new File(fileName))
   // load into an array of RenderSections
+
+  val imageLibrary = (file \\ "library_images")(0)
 
   var positions:Array[Float] = Array()
   var texCoords:Array[Float] = Array()
@@ -130,19 +138,37 @@ class Model(fileName:String) {
 
     var diffuseColor:Array[Float] = Array()
 
-    //if () { // has texture
-    //} else if () { // has diffuse color
-    //}
+    var materialObject:Material = null;
+
+    if ((diffuse \ "texture").length != 0) {
+      val samplerName = ((diffuse \ "texture")(0) \ "@texture").text
+      val sampler = ((file \\ "newparam") filter (x => (x \ "@sid").text == samplerName)) \ "sampler2D"
+      val surfaceName = (sampler \ "source").text
+      val surface = ((file \\ "newparam") filter (x => (x \ "@sid").text == surfaceName)) \ "surface"
+      val imageName = (surface \ "init_from").text
+      val image = ((imageLibrary \ "image") filter (x => (x \ "@id").text == imageName))
+      val imageFile = (image \ "init_from").text
+      Console.println(imageFile)
+      materialObject = new Material(Right(Texture.fromImage(imageFile)))
+    } else if ((diffuse \ "color").length != 0) {
+      val buf = (diffuse \ "color").text.split(" ") map (_.toFloat)
+      materialObject = new Material(Left(new Vector4(buf(0), buf(1), buf(2), buf(3))))
+    }
 
     val random = new Random(System.currentTimeMillis())
     if (diffuseColor.length == 0) {
       diffuseColor = Array(1.0f, 1.0f, 1.0f, 1.0f)
     }
 
-    val materialObject = new Material(Right(Texture.fromImage("crate.jpg")))
     var data:Array[Float] = Array()
 
-    (xml \ "p").text.split(" ").grouped(3) foreach { list =>
+    var hasTexCoords = false;
+
+    if (((xml \\ "input") map (_ \ "@semantic") filter (_.text == "TEXCOORD")).length == 1) {
+      hasTexCoords = true;
+    }
+
+    (xml \ "p").text.split(" ").grouped(if (hasTexCoords) 3 else 2) foreach { list =>
       //val r:Float = random.nextFloat() * 0.9f + 0.1f
       //random.nextInt(4) match {
       //  case 0 => {
@@ -162,12 +188,15 @@ class Model(fileName:String) {
       val indicies = list map (_.toInt)
       val newPositions = (positions.slice(indicies(0)*3, indicies(0)*3 + 3))
       val newNormals = (normals.slice(indicies(1)*3, indicies(1)*3 + 3))
-      val newTexCoords = (texCoords.slice(indicies(2)*2, indicies(2)*2 + 2))
+      var newTexCoords:Array[Float] = Array();
+      if (hasTexCoords) {
+         newTexCoords = (texCoords.slice(indicies(2)*2, indicies(2)*2 + 2))
+      }
 
       data = data ++ newPositions ++ newNormals ++ newTexCoords ++ diffuseColor
     }
 
-    renderSections = renderSections :+ new RenderSection(materialObject, data, 3, 3, 2, 4)
+    renderSections = renderSections :+ new RenderSection(materialObject, data, 3, 3, if (hasTexCoords) 2 else 0, 4)
   }
 
   def draw() = {
