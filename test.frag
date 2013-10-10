@@ -8,19 +8,31 @@ in vec3 lightDir;
 in vec3 eyeVec;
 in float distanceToLight;
 
-uniform sampler2D uSampler;
-
+uniform sampler2D uDiffuseSampler;
 uniform vec4 uDiffuseColor;
 uniform float uDiffuseTexture;
+
+uniform sampler2D uSpecularSampler;
+uniform vec4 uSpecularColor;
+uniform float uSpecularTexture;
+
+uniform float uShininess;
 
 void main() {
     float ambientIntensity = 0.05;
 
     vec4 diffuse = vec4(1.0);
     if (uDiffuseTexture > 0.5) {
-        diffuse = texture2D(uSampler, texCoord);
+        diffuse = texture2D(uDiffuseSampler, texCoord);
     } else {
         diffuse = uDiffuseColor;
+    }
+
+    vec4 specular = vec4(1.0);
+    if (uDiffuseTexture > 0.5) {
+        specular = texture2D(uDiffuseSampler, texCoord);
+    } else {
+        specular = uDiffuseColor;
     }
 
     vec4 final_color = vec4(0);
@@ -43,8 +55,8 @@ void main() {
     if (lambertTerm > ambientIntensity) {
         vec3 e = normalize(eyeVec);
         vec3 r = reflect(-l, n);
-        float specular = pow(max(dot(r, e), 0.0), 20);
-        final_color += 0.2 * vec4(specular) * att;
+        float specularMultiplier = pow(max(dot(r, e), 0.0), uShininess);
+        final_color += specular * specularMultiplier * att;
     }
 
     gl_FragColor = final_color;

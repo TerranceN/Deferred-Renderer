@@ -55,11 +55,16 @@ class Model(fileName:String) {
       val aTexCoordLocation = glGetAttribLocation(program.id, "aTexCoord")
       val aColorLocation = glGetAttribLocation(program.id, "aColor")
 
-      val uSamplerLocation = glGetUniformLocation(program.id, "uSampler")
       val uMousePosLocation = glGetUniformLocation(program.id, "uMousePos")
 
+      val uDiffuseSamplerLocation = glGetUniformLocation(program.id, "uDiffuseSampler")
       val uDiffuseColorLocation = glGetUniformLocation(program.id, "uDiffuseColor")
       val uDiffuseTextureLocation = glGetUniformLocation(program.id, "uDiffuseTexture")
+
+      val uSpecularSamplerLocation = glGetUniformLocation(program.id, "uSpecularSampler")
+      val uSpecularColorLocation = glGetUniformLocation(program.id, "uSpecularColor")
+      val uSpecularTextureLocation = glGetUniformLocation(program.id, "uSpecularTexture")
+      val uShininessLocation = glGetUniformLocation(program.id, "uShininess")
 
       glUniform2f(uMousePosLocation, Mouse.getX, Mouse.getY)
 
@@ -71,7 +76,7 @@ class Model(fileName:String) {
       mtl.diffuse match {
         case Right(t) => {
           t.bind
-          glUniform1i(uSamplerLocation, 0);
+          glUniform1i(uDiffuseSamplerLocation, 0);
           glUniform1f(uDiffuseTextureLocation, 1.0f);
         }
         case Left(color) => {
@@ -80,6 +85,21 @@ class Model(fileName:String) {
           glUniform4f(uDiffuseColorLocation, color.x, color.y, color.z, color.w)
         }
       }
+
+      mtl.specular match {
+        case Right(t) => {
+          t.bind
+          glUniform1i(uSpecularSamplerLocation, 0);
+          glUniform1f(uSpecularTextureLocation, 1.0f);
+        }
+        case Left(color) => {
+          glDisable(GL_TEXTURE_2D);
+          glUniform1f(uSpecularTextureLocation, 0.0f);
+          glUniform4f(uSpecularColorLocation, color.x, color.y, color.z, color.w)
+        }
+      }
+
+      glUniform1f(uShininessLocation, mtl.shininess)
 
       glBindBuffer(GL_ARRAY_BUFFER, dataBufferId)
 
@@ -129,31 +149,50 @@ class Model(fileName:String) {
 
   (geometry \\ "polylist") map loadPolylist
 
-  def loadPolylist(xml:Node) {
-    val material = (file \\ "material" filter(m => (m \ "@id").text == (xml \ "@material").text))(0)
-    val materialName = (material \ "@name").text
-
-    val effect = (file \\ "effect" filter(m => (m \ "@id").text == (materialName + "-effect")))(0)
-    val diffuse = (effect \\ "diffuse")(0)
-
-    var diffuseColor:Array[Float] = Array()
-
-    var materialObject:Material = null;
-
-    if ((diffuse \ "texture").length != 0) {
-      val samplerName = ((diffuse \ "texture")(0) \ "@texture").text
+  def loadColorOrTexture(xml:Node):Either[Vector4, Texture] = {
+    if ((xml \ "texture").length != 0) {
+      val samplerName = ((xml \ "texture")(0) \ "@texture").text
       val sampler = ((file \\ "newparam") filter (x => (x \ "@sid").text == samplerName)) \ "sampler2D"
       val surfaceName = (sampler \ "source").text
       val surface = ((file \\ "newparam") filter (x => (x \ "@sid").text == surfaceName)) \ "surface"
       val imageName = (surface \ "init_from").text
       val image = ((imageLibrary \ "image") filter (x => (x \ "@id").text == imageName))
       val imageFile = (image \ "init_from").text
-      Console.println(imageFile)
-      materialObject = new Material(Right(Texture.fromImage(imageFile)))
-    } else if ((diffuse \ "color").length != 0) {
-      val buf = (diffuse \ "color").text.split(" ") map (_.toFloat)
-      materialObject = new Material(Left(new Vector4(buf(0), buf(1), buf(2), buf(3))))
+      return Right(Texture.fromImage(imageFile))
+    } else if ((xml \ "color").length != 0) {
+      val buf = (xml \ "color").text.split(" ") map (_.toFloat)
+      return Left(new Vector4(buf(0), buf(1), buf(2), buf(3)))
+    } else {
+      return null;
     }
+  }
+
+  def loadPolylist(xml:Node) {
+    val material = (file \\ "material" filter(m => (m \ "@id").text == (xml \ "@material").text))(0)
+    val materialName = (material \ "@name").text
+
+    val effect = (file \\ "effect" filter(m => (m \ "@id").text == (materialName + "-effect")))(0)
+    val diffuse = (effect \\ "diffuse")(0)
+    val specular = (effect \\ "specular")(0)
+
+    var diffuseColor:Array[Float] = Array()
+
+    var materialObject:Material = new Material(loadColorOrTexture(diffuse), loadColorOrTexture(specular), 50);
+
+    //if ((diffuse \ "texture").length != 0) {
+    //  val samplerName = ((diffuse \ "texture")(0) \ "@texture").text
+    //  val sampler = ((file \\ "newparam") filter (x => (x \ "@sid").text == samplerName)) \ "sampler2D"
+    //  val surfaceName = (sampler \ "source").text
+    //  val surface = ((file \\ "newparam") filter (x => (x \ "@sid").text == surfaceName)) \ "surface"
+    //  val imageName = (surface \ "init_from").text
+    //  val image = ((imageLibrary \ "image") filter (x => (x \ "@id").text == imageName))
+    //  val imageFile = (image \ "init_from").text
+    //  Console.println(imageFile)
+    //  materialObject = new Material(Right(Texture.fromImage(imageFile)))
+    //} else if ((diffuse \ "color").length != 0) {
+    //  val buf = (diffuse \ "color").text.split(" ") map (_.toFloat)
+    //  materialObject = new Material(Left(new Vector4(buf(0), buf(1), buf(2), buf(3))))
+    //}
 
     val random = new Random(System.currentTimeMillis())
     if (diffuseColor.length == 0) {
