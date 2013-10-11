@@ -28,10 +28,10 @@ void main() {
     }
 
     vec4 specular = vec4(1.0);
-    if (uDiffuseTexture > 0.5) {
-        specular = texture2D(uDiffuseSampler, texCoord);
+    if (uSpecularTexture > 0.5) {
+        specular = texture2D(uSpecularSampler, texCoord);
     } else {
-        specular = uDiffuseColor;
+        specular = uSpecularColor;
     }
 
     vec4 final_color = vec4(0);

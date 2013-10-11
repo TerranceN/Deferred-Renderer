@@ -167,13 +167,24 @@ class Model(fileName:String) {
     val materialName = (material \ "@name").text
 
     val effect = (file \\ "effect" filter(m => (m \ "@id").text == (materialName + "-effect")))(0)
-    val diffuse = (effect \\ "diffuse")(0)
-    val specular = (effect \\ "specular")(0)
+    val diffuse = (effect \\ "diffuse")
+    val specular = (effect \\ "specular")
+    val shininess = (effect \\ "shininess")
 
+    var diffuseObject:Either[Vector4, Texture] = Left(new Vector4(1.0f, 1.0f, 1.0f, 1.0f))
+    var specularObject:Either[Vector4, Texture] = Left(new Vector4(0.0f, 0.0f, 0.0f, 0.0f))
+    var shininessObject = 0f
 
-    var materialObject:Material = new Material(loadColorOrTexture(diffuse), loadColorOrTexture(specular), 50);
-
+    if (diffuse.length > 0) {
+      diffuseObject = loadColorOrTexture(diffuse(0))
     }
+
+    if (specular.length > 0 && shininess.length > 0) {
+      specularObject = loadColorOrTexture(specular(0))
+      shininessObject = (shininess \ "float").text.toFloat
+    }
+
+    var materialObject:Material = new Material(diffuseObject, specularObject, shininessObject);
 
     var data:Array[Float] = Array()
 
