@@ -1,12 +1,10 @@
 #version 130
 
 in vec3 aCoord;
-in vec4 aColor;
 in vec3 aNormal;
 in vec2 aTexCoord;
 
 out vec2 texCoord;
-out vec4 color;
 out vec3 normal;
 
 out vec3 lightDir;
@@ -20,7 +18,6 @@ void main() {
     vec4 finishedCoord = gl_ModelViewProjectionMatrix * vec4(aCoord, 1.0);
 
     distanceToLight = length(lightPosition - finishedCoord.xyz);
-    color = aColor;
     texCoord = aTexCoord;
     normal = gl_NormalMatrix * aNormal;
     eyeVec = finishedCoord.xyz;

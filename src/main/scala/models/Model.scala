@@ -20,8 +20,7 @@ class Model(fileName:String) {
   val data:Array[Float],
   val vertexOffset:Int,
   val normalOffset:Int,
-  val texCoordOffset:Int,
-  val colorOffset:Int) {
+  val texCoordOffset:Int) {
     val dataBufferId = glGenBuffers
     val dataBuffer = BufferUtils.createFloatBuffer(data.length)
     dataBuffer.put(data)
@@ -29,7 +28,7 @@ class Model(fileName:String) {
     glBindBuffer(GL_ARRAY_BUFFER, dataBufferId)
     glBufferData(GL_ARRAY_BUFFER, dataBuffer, GL_STATIC_DRAW)
 
-    val stride = 3 + 3 + 2 + 4
+    val stride = vertexOffset + normalOffset + texCoordOffset
     val numVerticies = data.length / stride
 
     //data.grouped(stride) foreach { list =>
@@ -53,7 +52,6 @@ class Model(fileName:String) {
       val aCoordLocation = glGetAttribLocation(program.id, "aCoord")
       val aNormalLocation = glGetAttribLocation(program.id, "aNormal")
       val aTexCoordLocation = glGetAttribLocation(program.id, "aTexCoord")
-      val aColorLocation = glGetAttribLocation(program.id, "aColor")
 
       val uMousePosLocation = glGetUniformLocation(program.id, "uMousePos")
 
@@ -71,7 +69,6 @@ class Model(fileName:String) {
       glEnableVertexAttribArray(aCoordLocation)
       glEnableVertexAttribArray(aNormalLocation)
       glEnableVertexAttribArray(aTexCoordLocation)
-      glEnableVertexAttribArray(aColorLocation)
 
       mtl.diffuse match {
         case Right(t) => {
@@ -106,14 +103,12 @@ class Model(fileName:String) {
       glVertexAttribPointer(aCoordLocation, 3, GL_FLOAT, false, stride*4, 0)
       glVertexAttribPointer(aNormalLocation, 3, GL_FLOAT, false, stride*4, 3*4)
       glVertexAttribPointer(aTexCoordLocation, 2, GL_FLOAT, false, stride*4, 6*4)
-      glVertexAttribPointer(aColorLocation, 4, GL_FLOAT, false, stride*4, 8*4)
 
       glDrawArrays(GL_TRIANGLES, 0, numVerticies)
 
       glDisableVertexAttribArray(aCoordLocation)
       glDisableVertexAttribArray(aNormalLocation)
       glDisableVertexAttribArray(aTexCoordLocation)
-      glDisableVertexAttribArray(aColorLocation)
     }
   }
 
@@ -175,13 +170,9 @@ class Model(fileName:String) {
     val diffuse = (effect \\ "diffuse")(0)
     val specular = (effect \\ "specular")(0)
 
-    var diffuseColor:Array[Float] = Array()
 
     var materialObject:Material = new Material(loadColorOrTexture(diffuse), loadColorOrTexture(specular), 50);
 
-    val random = new Random(System.currentTimeMillis())
-    if (diffuseColor.length == 0) {
-      diffuseColor = Array(1.0f, 1.0f, 1.0f, 1.0f)
     }
 
     var data:Array[Float] = Array()
@@ -201,10 +192,10 @@ class Model(fileName:String) {
          newTexCoords = (texCoords.slice(indicies(2)*2, indicies(2)*2 + 2))
       }
 
-      data = data ++ newPositions ++ newNormals ++ newTexCoords ++ diffuseColor
+      data = data ++ newPositions ++ newNormals ++ newTexCoords
     }
 
-    renderSections = renderSections :+ new RenderSection(materialObject, data, 3, 3, if (hasTexCoords) 2 else 0, 4)
+    renderSections = renderSections :+ new RenderSection(materialObject, data, 3, 3, if (hasTexCoords) 2 else 0)
   }
 
   def draw() = {

@@ -1,7 +1,6 @@
 #version 130
 
 in vec2 texCoord;
-in vec4 color;
 in vec3 normal;
 
 in vec3 lightDir;
