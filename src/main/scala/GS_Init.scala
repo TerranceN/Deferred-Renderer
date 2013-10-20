@@ -23,7 +23,8 @@ class GS_Init extends GameState {
     glClearColor(0f, 0f, 0f, 1f)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity
-    GLU.gluPerspective(60, screenWidth.toFloat / screenHeight, 0.1f, 1000)
+    GLU.gluPerspective(90, screenWidth.toFloat / screenHeight, 0.1f, 1000)
+    GLU.gluLookAt(0, 0, 0, 0, 0, -10, 0, 1, 0);
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity
 

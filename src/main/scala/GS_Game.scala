@@ -49,14 +49,14 @@ class GS_Game extends GameState {
     program.bind
 
     glPushMatrix()
-      glTranslated(2.0f, -2 * sin(y), -10.0f)
+      glTranslated(2.0, 2 * sin(y), -8.0)
       glRotated(angle, 0, 1, 0)
 
       m.draw()
     glPopMatrix()
 
     glPushMatrix()
-      glTranslated(-2.0f, -2 * sin(y + 3.14f), -10.0f)
+      glTranslated(-2.0, 2 * sin(y + 3.14), -8.0)
       glRotated(angle, 0, 1, 0)
 
       m2.draw()
