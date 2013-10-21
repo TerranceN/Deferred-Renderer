@@ -18,7 +18,7 @@ uniform float uSpecularTexture;
 uniform float uShininess;
 
 void main() {
-    float ambientIntensity = 0.1;
+    float ambientIntensity = 0.05;
 
     vec4 diffuse = vec4(1.0);
     if (uDiffuseTexture > 0.5) {
@@ -47,11 +47,16 @@ void main() {
     vec3 n = normalize(normal);
     vec3 lDir = normalize(lightDir);
 
+    // this is the irradiance of the light
+    float El = 1;
+
     // for each light source
     vec3 h = normalize(v + lDir);
     float cosTh = clamp(dot(n, h), 0, 1);
     float cosTi = clamp(dot(n, lDir), 0, 1);
-    final_color += (diffuse + specular * pow(cosTh, uShininess)) * 0.5 * cosTi;
+    final_color += (diffuse + specular * pow(cosTh, uShininess)) * El * cosTi * att;
+
+    final_color += diffuse * ambientIntensity;
 
     gl_FragColor = final_color;
 }
