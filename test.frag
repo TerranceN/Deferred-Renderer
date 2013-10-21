@@ -18,7 +18,7 @@ uniform float uSpecularTexture;
 uniform float uShininess;
 
 void main() {
-    float ambientIntensity = 0.05;
+    float ambientIntensity = 0.1;
 
     vec4 diffuse = vec4(1.0);
     if (uDiffuseTexture > 0.5) {
@@ -43,20 +43,15 @@ void main() {
 
     float att = 1.0 / (attConst+(attLinear*distanceToLight)+(attQuad*distanceToLight*distanceToLight));
 
+    vec3 v = normalize(eyeVec);
     vec3 n = normalize(normal);
-    vec3 l = normalize(lightDir);
-    float lambertTerm = dot(n, l) * att;
+    vec3 lDir = normalize(lightDir);
 
-    lambertTerm = max(lambertTerm, ambientIntensity);
-
-    final_color += diffuse * lambertTerm;
-
-    if (lambertTerm > ambientIntensity) {
-        vec3 e = normalize(eyeVec);
-        vec3 r = reflect(-l, n);
-        float specularMultiplier = pow(max(dot(r, e), 0.0), uShininess);
-        final_color += specular * specularMultiplier * att;
-    }
+    // for each light source
+    vec3 h = normalize(v + lDir);
+    float cosTh = clamp(dot(n, h), 0, 1);
+    float cosTi = clamp(dot(n, lDir), 0, 1);
+    final_color += (diffuse + specular * pow(cosTh, uShininess)) * 0.5 * cosTi;
 
     gl_FragColor = final_color;
 }
