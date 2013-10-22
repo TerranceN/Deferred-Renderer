@@ -1,11 +1,17 @@
 #version 130
 
+const int MAX_LIGHTS = 10;
+
 in vec2 texCoord;
 in vec3 normal;
 
-in vec3 lightDir;
 in vec3 eyeVec;
-in float distanceToLight;
+
+in vec3 lightDir[MAX_LIGHTS];
+in float distanceToLight[MAX_LIGHTS];
+
+uniform int uNumLights;
+uniform vec3 uLightIrradiance[MAX_LIGHTS];
 
 uniform sampler2D uDiffuseSampler;
 uniform vec4 uDiffuseColor;
@@ -18,7 +24,7 @@ uniform float uSpecularTexture;
 uniform float uShininess;
 
 void main() {
-    float ambientIntensity = 0.05;
+    float ambientIntensity = 0.1;
 
     vec4 diffuse = vec4(1.0);
     if (uDiffuseTexture > 0.5) {
@@ -41,22 +47,21 @@ void main() {
     float attLinear = 0.0;
     float attQuad = 0.05;
 
-    float att = 1.0 / (attConst+(attLinear*distanceToLight)+(attQuad*distanceToLight*distanceToLight));
-
     vec3 v = normalize(eyeVec);
     vec3 n = normalize(normal);
-    vec3 lDir = normalize(lightDir);
 
-    // this is the irradiance of the light
-    float El = 1;
+    float lightsToRender = min(uNumLights, MAX_LIGHTS);
+    for (int i = 0; i < lightsToRender; i++) {
+        float att = 1.0 / (attConst+(attLinear*distanceToLight[i])+(attQuad*distanceToLight[i]*distanceToLight[i]));
 
-    // for each light source
-    vec3 h = normalize(v + lDir);
-    float cosTh = clamp(dot(n, h), 0, 1);
-    float cosTi = clamp(dot(n, lDir), 0, 1);
-    final_color += (diffuse + specular * pow(cosTh, uShininess)) * El * cosTi * att;
+        vec3 lDir = normalize(lightDir[i]);
+        vec3 h = normalize(v + lDir);
+        float cosTh = clamp(dot(n, h), 0, 1);
+        float cosTi = clamp(dot(n, lDir), 0, 1);
+        final_color += (diffuse + specular * pow(cosTh, uShininess)) * vec4(uLightIrradiance[i], 1) * cosTi * att;
 
-    final_color += diffuse * ambientIntensity;
+        final_color += diffuse * ambientIntensity * att * vec4(uLightIrradiance[i], 1);
+    }
 
     gl_FragColor = final_color;
 }

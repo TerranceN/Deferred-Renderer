@@ -5,7 +5,6 @@ import org.lwjgl.opengl.GL15._
 import org.lwjgl.opengl.GL20._
 import org.lwjgl.util.glu.GLU._
 import org.lwjgl.BufferUtils
-import org.lwjgl.input.Mouse
 import scala.xml._
 import java.io.File
 import scala.util.Random
@@ -53,8 +52,6 @@ class Model(fileName:String) {
       val aNormalLocation = glGetAttribLocation(program.id, "aNormal")
       val aTexCoordLocation = glGetAttribLocation(program.id, "aTexCoord")
 
-      val uMousePosLocation = glGetUniformLocation(program.id, "uMousePos")
-
       val uDiffuseSamplerLocation = glGetUniformLocation(program.id, "uDiffuseSampler")
       val uDiffuseColorLocation = glGetUniformLocation(program.id, "uDiffuseColor")
       val uDiffuseTextureLocation = glGetUniformLocation(program.id, "uDiffuseTexture")
@@ -63,8 +60,6 @@ class Model(fileName:String) {
       val uSpecularColorLocation = glGetUniformLocation(program.id, "uSpecularColor")
       val uSpecularTextureLocation = glGetUniformLocation(program.id, "uSpecularTexture")
       val uShininessLocation = glGetUniformLocation(program.id, "uShininess")
-
-      glUniform2f(uMousePosLocation, Mouse.getX, Mouse.getY)
 
       glEnableVertexAttribArray(aCoordLocation)
       glEnableVertexAttribArray(aNormalLocation)
