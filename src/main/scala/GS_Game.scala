@@ -22,11 +22,28 @@ import vectors._
 import lighting._
 
 class GS_Game extends GameState {
+  class FallingLight(initPosition:Vector3, var velocity:Vector3, val initIrradiance:Vector3) {
+    val light = new Light(initIrradiance, initPosition);
+    var life:Int = 100;
+
+    def update(deltaTime:Double) {
+      velocity += new Vector3(0, -10, 0) * deltaTime.toFloat
+      light.position += velocity * deltaTime.toFloat
+
+      life = life - 1;
+      light.intensity = initIrradiance * (life.toFloat / 100)
+    }
+  }
+
   val m = new Model("crate_multitexture.dae")
   val m2 = new Model("sphere.dae")
   val screenVBO = glGenBuffers()
   val gbuffer = new GBuffer()
   gbuffer.setup(1280, 720)
+
+  var lights:Array[FallingLight] = Array()
+  var wasLeftButtonDown:Boolean = false;
+  var wasRightButtonDown:Boolean = false;
 
   val mainSceneShader = new ShaderProgram(
     new VertexShader("shaders/mainScene.vert"),
@@ -95,6 +112,54 @@ class GS_Game extends GameState {
   def update(deltaTime:Double) = {
     y += 1 * deltaTime
     angle += 40 * deltaTime
+
+    val lightDistance = 3.0;
+
+    val mouseLightDistance = 5
+    val hAngle = 90
+    val vAngle = 59
+    val xScale = tan((hAngle * Pi / 180) / 2) * 2 * mouseLightDistance
+    val yScale = tan((vAngle * Pi / 180) / 2) * 2 * mouseLightDistance
+
+    val lightIntensity = 1f
+
+    if (!wasLeftButtonDown && Mouse.isButtonDown(0)) {
+      lights = lights :+ new FallingLight(
+        new Vector3(
+          (((Mouse.getX / 1280.0) * 2 - 1) * xScale).toFloat,
+          (((Mouse.getY / 720.0) * 2 - 1) * yScale).toFloat,
+          -5
+        ),
+        new Vector3(0, 0, 0),
+        new Vector3(1, 0, 0) * lightIntensity
+      )
+    }
+
+    if (!wasRightButtonDown && Mouse.isButtonDown(1)) {
+      lights = lights :+ new FallingLight(
+        new Vector3(
+          (((Mouse.getX / 1280.0) * 2 - 1) * xScale).toFloat,
+          (((Mouse.getY / 720.0) * 2 - 1) * yScale).toFloat,
+          -5
+        ),
+        new Vector3(0, 0, 0),
+        new Vector3(0, 0, 1) * lightIntensity
+      )
+    }
+
+    wasLeftButtonDown = Mouse.isButtonDown(0)
+    wasRightButtonDown = Mouse.isButtonDown(1)
+
+    var newLights:Array[FallingLight] = Array()
+    for (l <- lights) {
+      l.update(deltaTime)
+
+      if (l.life > 0) {
+        newLights = newLights :+ l
+      }
+    }
+
+    lights = newLights
   }
 
   def checkError() {
@@ -106,11 +171,13 @@ class GS_Game extends GameState {
   }
 
   def draw() = {
+    val near = 0.1f;
+    val far = 100f;
     glLoadIdentity
     glClear(GL_COLOR_BUFFER_BIT)
     glClear(GL_DEPTH_BUFFER_BIT)
 
-    gbuffer.bindForGeomPass(0.1f, 100f)
+    gbuffer.bindForGeomPass(near, far)
       glMatrixMode(GL_MODELVIEW)
       glPushMatrix()
         glTranslated(0.0, 2 * sin(y), -8.4)
@@ -127,65 +194,31 @@ class GS_Game extends GameState {
       glPopMatrix()
     gbuffer.unbindForGeomPass()
 
-    mainSceneShader.bind()
-      val lightDistance = 3.0;
+    gbuffer.bindForLightPass(near, far)
+      val program = ShaderProgram.getActiveShader()
+      lights.grouped(10) foreach { lst =>
+        val uNumLightsLocation = glGetUniformLocation(program.id, "uNumLights")
+        glUniform1i(uNumLightsLocation, lst.length)
 
-      val mouseLightDistance = 5
-      val hAngle = 90
-      val vAngle = 59
-      val xScale = tan((hAngle * Pi / 180) / 2) * 2 * mouseLightDistance
-      val yScale = tan((vAngle * Pi / 180) / 2) * 2 * mouseLightDistance
+        for (i <- 0 until lst.length) {
+          val irradianceLocation = glGetUniformLocation(program.id, "uLightIrradiance[" + i + "]")
+          val positionLocation = glGetUniformLocation(program.id, "uLightPositions[" + i + "]")
 
-      val lights = Array(
-        new Light(
-          new Vector3(1, 0, 0),
-          new Vector3(
-            (lightDistance * cos(y)).toFloat,
-            0,
-            (lightDistance * sin(y)).toFloat - 8
-          )
-        ),
-        new Light(
-          new Vector3(0, 0, 1),
-          new Vector3(
-            (lightDistance * cos(2 * y)).toFloat,
-            0,
-            (lightDistance * sin(2 * y)).toFloat - 8
-          )
-        ),
-        new Light(
-          new Vector3(1, 1, 1),
-          new Vector3(
-            (((Mouse.getX / 1280.0) * 2 - 1) * xScale).toFloat,
-            (((Mouse.getY / 720.0) * 2 - 1) * yScale).toFloat,
-            -5
-          )
-        )
-      )
+          lst(i).light.set(irradianceLocation, positionLocation)
+        }
 
-      val uNumLightsLocation = glGetUniformLocation(mainSceneShader.id, "uNumLights")
-      glUniform1i(uNumLightsLocation, lights.length)
-
-      for (i <- 0 until lights.length) {
-        val irradianceLocation = glGetUniformLocation(mainSceneShader.id, "uLightIrradiance[" + i + "]")
-        val positionLocation = glGetUniformLocation(mainSceneShader.id, "uLightPositions[" + i + "]")
-
-        lights(i).set(irradianceLocation, positionLocation)
+        drawScreenVBO()
       }
+    gbuffer.unbindForLightPass()
 
+    mainSceneShader.bind()
       glActiveTexture(GL_TEXTURE0)
-      glBindTexture(GL_TEXTURE_2D, gbuffer.getTexture(TextureType.GBUFFER_TEXTURE_TYPE_ALBEDO))
-      glActiveTexture(GL_TEXTURE1)
-      glBindTexture(GL_TEXTURE_2D, gbuffer.getTexture(TextureType.GBUFFER_TEXTURE_TYPE_NORMALS_DEPTH))
-      glActiveTexture(GL_TEXTURE2)
-      glBindTexture(GL_TEXTURE_2D, gbuffer.getTexture(TextureType.GBUFFER_TEXTURE_TYPE_SPECULAR))
-      mainSceneShader.setUniform1i("uDiffuseSampler", 0)
-      mainSceneShader.setUniform1i("uNormalsDepthSampler", 1)
-      mainSceneShader.setUniform1i("uSpecularSampler", 2)
-      mainSceneShader.setUniform1f("uFarDistance", 100)
-      mainSceneShader.setUniform1f("uNearDistance", 0.1f)
+      glBindTexture(GL_TEXTURE_2D, gbuffer.getTexture(TextureType.GBUFFER_TEXTURE_TYPE_LIGHT_PASS))
+      mainSceneShader.setUniform1i("uSampler", 0)
       drawScreenVBO()
     mainSceneShader.unbind()
+
+    Console.println(lights.length)
 
     checkError
   }

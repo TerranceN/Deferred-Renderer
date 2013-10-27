@@ -26,6 +26,7 @@ class GBuffer {
   import TextureType._
 
   var gbufferShader:ShaderProgram = null
+  var lightingShader:ShaderProgram = null
   var isSetup = false
 
   var textures = BufferUtils.createIntBuffer(GBUFFER_NUM_TEXTURES)
@@ -49,6 +50,7 @@ class GBuffer {
 
   def loadShaders() {
     gbufferShader = new ShaderProgram("shaders/gbuffer.vert", "shaders/gbuffer.frag")
+    lightingShader = new ShaderProgram("shaders/lighting.vert", "shaders/lighting.frag")
   }
 
   def setupFBO():Boolean = {
@@ -88,7 +90,7 @@ class GBuffer {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, screenWidth, screenHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, null:FloatBuffer)
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, screenWidth, screenHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, null:FloatBuffer)
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + GBUFFER_TEXTURE_TYPE_SPECULAR, GL_TEXTURE_2D, textures.get(GBUFFER_TEXTURE_TYPE_SPECULAR), 0)
 
     // lighting pass (16-bit RGBA)
@@ -97,7 +99,7 @@ class GBuffer {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, screenWidth, screenHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, null:FloatBuffer)
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, screenWidth, screenHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, null:FloatBuffer)
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + GBUFFER_TEXTURE_TYPE_LIGHT_PASS, GL_TEXTURE_2D, textures.get(GBUFFER_TEXTURE_TYPE_LIGHT_PASS), 0)
 
     // create depth texture (we don't use this explicitly, but since we use depth testing when rendering + for our stencil pass, our FBO needs a depth buffer)
@@ -130,7 +132,7 @@ class GBuffer {
     glBindFramebuffer(GL_FRAMEBUFFER, fbo)
     glViewport(0, 0, screenWidth, screenHeight)
 
-    val buffer = BufferUtils.createIntBuffer(3);
+    val buffer = BufferUtils.createIntBuffer(3)
     buffer.put(GL_COLOR_ATTACHMENT0 + GBUFFER_TEXTURE_TYPE_ALBEDO)
     buffer.put(GL_COLOR_ATTACHMENT0 + GBUFFER_TEXTURE_TYPE_NORMALS_DEPTH)
     buffer.put(GL_COLOR_ATTACHMENT0 + GBUFFER_TEXTURE_TYPE_SPECULAR)
@@ -161,30 +163,42 @@ class GBuffer {
     glDrawBuffer(GL_BACK)
   }
 
-  def unbind() {
+  def bindForLightPass(near:Float, far:Float) {
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo)
+    glViewport(0, 0, screenWidth, screenHeight)
+
+    val buffer = BufferUtils.createIntBuffer(1)
+    buffer.put(GL_COLOR_ATTACHMENT0 + GBUFFER_TEXTURE_TYPE_LIGHT_PASS)
+    buffer.flip()
+
+    glDrawBuffers(buffer)
+
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
+    glClear(GL_COLOR_BUFFER_BIT)
+    glClear(GL_DEPTH_BUFFER_BIT)
+    glClear(GL_STENCIL_BUFFER_BIT)
+
+    lightingShader.bind()
+    glActiveTexture(GL_TEXTURE0)
+    glBindTexture(GL_TEXTURE_2D, textures.get(GBUFFER_TEXTURE_TYPE_ALBEDO))
+    glActiveTexture(GL_TEXTURE1)
+    glBindTexture(GL_TEXTURE_2D, textures.get(GBUFFER_TEXTURE_TYPE_NORMALS_DEPTH))
+    glActiveTexture(GL_TEXTURE2)
+    glBindTexture(GL_TEXTURE_2D, textures.get(GBUFFER_TEXTURE_TYPE_SPECULAR))
+    glActiveTexture(GL_TEXTURE3)
+    glBindTexture(GL_TEXTURE_2D, textures.get(GBUFFER_TEXTURE_TYPE_LIGHT_PASS))
+    lightingShader.setUniform1i("uDiffuseSampler", 0)
+    lightingShader.setUniform1i("uNormalsDepthSampler", 1)
+    lightingShader.setUniform1i("uSpecularSampler", 2)
+    lightingShader.setUniform1i("uPreviousLightingSampler", 3)
+    lightingShader.setUniform1f("uFarDistance", far)
+    lightingShader.setUniform1f("uNearDistance", near)
+  }
+
+  def unbindForLightPass() {
+    lightingShader.unbind()
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0)
     glDrawBuffer(GL_BACK)
-  }
-
-  def bindForReading() {
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo)
-  }
-
-  def unbindForReading() {
-    glBindFramebuffer(GL_FRAMEBUFFER, 0)
-  }
-
-  def bindForLightPass() {
-    glDrawBuffer(GL_COLOR_ATTACHMENT0 + GBUFFER_TEXTURE_TYPE_LIGHT_PASS)
-
-    //glStencilFunc(GL_NOTEQUAL, 0, 0xFF)
-    //glDisable(GL_DEPTH_TEST)
-
-    glEnable(GL_BLEND)
-    glBlendEquation(GL_FUNC_ADD)
-    glBlendFunc(GL_ONE, GL_ONE)
-
-    glEnable(GL_CULL_FACE)
-    glCullFace(GL_FRONT)
   }
 }
