@@ -38,7 +38,6 @@ class Texture(image:BufferedImage) {
 
   def bind() = {
     glEnable(GL_TEXTURE_2D)
-    glActiveTexture(GL_TEXTURE0)
     glBindTexture(GL_TEXTURE_2D, id)
   }
 

@@ -1,6 +1,7 @@
 package com.awesome.models
 
 import org.lwjgl.opengl.GL11._
+import org.lwjgl.opengl.GL13._
 import org.lwjgl.opengl.GL15._
 import org.lwjgl.opengl.GL20._
 import org.lwjgl.util.glu.GLU._
@@ -52,46 +53,41 @@ class Model(fileName:String) {
       val aNormalLocation = glGetAttribLocation(program.id, "aNormal")
       val aTexCoordLocation = glGetAttribLocation(program.id, "aTexCoord")
 
-      val uDiffuseSamplerLocation = glGetUniformLocation(program.id, "uDiffuseSampler")
-      val uDiffuseColorLocation = glGetUniformLocation(program.id, "uDiffuseColor")
-      val uDiffuseTextureLocation = glGetUniformLocation(program.id, "uDiffuseTexture")
-
-      val uSpecularSamplerLocation = glGetUniformLocation(program.id, "uSpecularSampler")
-      val uSpecularColorLocation = glGetUniformLocation(program.id, "uSpecularColor")
-      val uSpecularTextureLocation = glGetUniformLocation(program.id, "uSpecularTexture")
-      val uShininessLocation = glGetUniformLocation(program.id, "uShininess")
-
       glEnableVertexAttribArray(aCoordLocation)
       glEnableVertexAttribArray(aNormalLocation)
       glEnableVertexAttribArray(aTexCoordLocation)
 
+      glActiveTexture(GL_TEXTURE1)
+      glBindTexture(GL_TEXTURE_2D, 0)
       mtl.diffuse match {
         case Right(t) => {
           t.bind
-          glUniform1i(uDiffuseSamplerLocation, 0);
-          glUniform1f(uDiffuseTextureLocation, 1.0f);
+          program.setUniform1i("uDiffuseSampler", 1)
+          program.setUniform1f("uDiffuseTexture", 1.0f)
         }
         case Left(color) => {
-          glDisable(GL_TEXTURE_2D);
-          glUniform1f(uDiffuseTextureLocation, 0.0f);
-          glUniform4f(uDiffuseColorLocation, color.x, color.y, color.z, color.w)
+          glDisable(GL_TEXTURE_2D)
+          program.setUniform4f("uDiffuseColor", color.x, color.y, color.z, color.w)
+          program.setUniform1f("uDiffuseTexture", 0.0f)
         }
       }
 
+      glActiveTexture(GL_TEXTURE2)
+      glBindTexture(GL_TEXTURE_2D, 0)
       mtl.specular match {
         case Right(t) => {
           t.bind
-          glUniform1i(uSpecularSamplerLocation, 0);
-          glUniform1f(uSpecularTextureLocation, 1.0f);
+          program.setUniform1i("uSpecularSampler", 2)
+          program.setUniform1f("uSpecularTexture", 1.0f)
         }
         case Left(color) => {
           glDisable(GL_TEXTURE_2D);
-          glUniform1f(uSpecularTextureLocation, 0.0f);
-          glUniform4f(uSpecularColorLocation, color.x, color.y, color.z, color.w)
+          program.setUniform4f("uSpecularColor", color.x, color.y, color.z, color.w)
+          program.setUniform1f("uSpecularTexture", 0.0f)
         }
       }
 
-      glUniform1f(uShininessLocation, mtl.shininess)
+      program.setUniform1f("uShininess", mtl.shininess)
 
       glBindBuffer(GL_ARRAY_BUFFER, dataBufferId)
 

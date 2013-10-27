@@ -8,6 +8,8 @@ import org.lwjgl.opengl.GL11._
 import org.lwjgl.opengl.GL20._
 
 class ShaderProgram(vert:VertexShader, frag:FragmentShader) {
+  def this(vert:String, frag:String) = this(new VertexShader(vert), new FragmentShader(frag))
+
   var id = glCreateProgramObjectARB()
 
   try {
@@ -30,8 +32,44 @@ class ShaderProgram(vert:VertexShader, frag:FragmentShader) {
     ShaderProgram.activeShader = this
   }
 
+  def unbind() {
+    ShaderProgram.useNone
+  }
+
   def getShaderError():String = {
     return glGetInfoLogARB(id, glGetObjectParameteriARB(id, GL_OBJECT_INFO_LOG_LENGTH_ARB))
+  }
+
+  def setUniform1i(name:String, x:Int) {
+    glUniform1i(glGetUniformLocation(id, name), x)
+  }
+
+  def setUniform2i(name:String, x:Int, y:Int) {
+    glUniform2i(glGetUniformLocation(id, name), x, y)
+  }
+
+  def setUniform3i(name:String, x:Int, y:Int, z:Int) {
+    glUniform3i(glGetUniformLocation(id, name), x, y, z)
+  }
+
+  def setUniform4i(name:String, x:Int, y:Int, z:Int, w:Int) {
+    glUniform4i(glGetUniformLocation(id, name), x, y, z, w)
+  }
+
+  def setUniform1f(name:String, x:Float) {
+    glUniform1f(glGetUniformLocation(id, name), x)
+  }
+
+  def setUniform2f(name:String, x:Float, y:Float) {
+    glUniform2f(glGetUniformLocation(id, name), x, y)
+  }
+
+  def setUniform3f(name:String, x:Float, y:Float, z:Float) {
+    glUniform3f(glGetUniformLocation(id, name), x, y, z)
+  }
+
+  def setUniform4f(name:String, x:Float, y:Float, z:Float, w:Float) {
+    glUniform4f(glGetUniformLocation(id, name), x, y, z, w)
   }
 }
 
