@@ -104,8 +104,8 @@ class GBuffer {
     // we make it a renderbuffer and not a texture as we'll never access it directly in a shader
     renderBuffer = glGenRenderbuffers()
     glBindRenderbuffer(GL_RENDERBUFFER, renderBuffer)
-    //glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH32F_STENCIL8, screenWidth, screenHeight)
-    //glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBuffer)
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_STENCIL, screenWidth, screenHeight)
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBuffer)
 
     // check status
     val status = glCheckFramebufferStatus(GL_FRAMEBUFFER)
@@ -139,10 +139,12 @@ class GBuffer {
     glDrawBuffers(buffer)
 
     glDepthMask(true)
-    glEnable(GL_DEPTH_TEST)
+    glEnable(GL_DEPTH_TEST) 
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)
+    glClear(GL_COLOR_BUFFER_BIT)
+    glClear(GL_DEPTH_BUFFER_BIT)
+    glClear(GL_STENCIL_BUFFER_BIT)
 
     glDisable(GL_BLEND)
 
@@ -176,7 +178,7 @@ class GBuffer {
     glDrawBuffer(GL_COLOR_ATTACHMENT0 + GBUFFER_TEXTURE_TYPE_LIGHT_PASS)
 
     //glStencilFunc(GL_NOTEQUAL, 0, 0xFF)
-    glDisable(GL_DEPTH_TEST)
+    //glDisable(GL_DEPTH_TEST)
 
     glEnable(GL_BLEND)
     glBlendEquation(GL_FUNC_ADD)

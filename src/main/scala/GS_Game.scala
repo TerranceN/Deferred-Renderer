@@ -28,17 +28,6 @@ class GS_Game extends GameState {
   val gbuffer = new GBuffer()
   gbuffer.setup(1280, 720)
 
-  val t = Texture.fromImage("crate.jpg")
-
-  val program = new ShaderProgram(
-    new VertexShader("test.vert"),
-    new FragmentShader("test.frag")
-  //  //new VertexShader("shaders/normal.vert"),
-  //  //new FragmentShader("shaders/normal.frag")
-  //  //new VertexShader("shaders/normal.vert"),
-  //  //new FragmentShader("shaders/normal.frag")
-  )
-
   val mainSceneShader = new ShaderProgram(
     new VertexShader("shaders/mainScene.vert"),
     new FragmentShader("shaders/mainScene.frag")
@@ -122,15 +111,16 @@ class GS_Game extends GameState {
     glClear(GL_DEPTH_BUFFER_BIT)
 
     gbuffer.bindForGeomPass(0.1f, 100f)
+      glMatrixMode(GL_MODELVIEW)
       glPushMatrix()
-        glTranslated(2.0, 2 * sin(y), -8.0)
+        glTranslated(0.0, 2 * sin(y), -8.4)
         glRotated(angle, 0, 1, 0)
 
         m.draw()
       glPopMatrix()
 
       glPushMatrix()
-        glTranslated(-2.0, 2 * sin(y + 3.14), -8.0)
+        glTranslated(-0.0, 2 * sin(y + 3.14), -8.0)
         glRotated(angle, 0, 1, 0)
 
         m2.draw()
