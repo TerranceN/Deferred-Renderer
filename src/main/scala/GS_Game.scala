@@ -24,14 +24,14 @@ import lighting._
 class GS_Game extends GameState {
   class FallingLight(initPosition:Vector3, var velocity:Vector3, val initIrradiance:Vector3) {
     val light = new Light(initIrradiance, initPosition);
-    var life:Int = 100;
+    var life:Int = 50;
 
     def update(deltaTime:Double) {
       velocity += new Vector3(0, -10, 0) * deltaTime.toFloat
       light.position += velocity * deltaTime.toFloat
 
       life = life - 1;
-      light.intensity = initIrradiance * (life.toFloat / 100)
+      light.intensity = initIrradiance * (life.toFloat / 50)
     }
   }
 
@@ -113,8 +113,6 @@ class GS_Game extends GameState {
     y += 1 * deltaTime
     angle += 40 * deltaTime
 
-    val lightDistance = 3.0;
-
     val mouseLightDistance = 5
     val hAngle = 90
     val vAngle = 59
@@ -126,24 +124,24 @@ class GS_Game extends GameState {
     if (!wasLeftButtonDown && Mouse.isButtonDown(0)) {
       lights = lights :+ new FallingLight(
         new Vector3(
-          (((Mouse.getX / 1280.0) * 2 - 1) * xScale).toFloat,
-          (((Mouse.getY / 720.0) * 2 - 1) * yScale).toFloat,
+          (((Mouse.getX / GLFrustum.screenWidth) * 2 - 1) * xScale).toFloat,
+          (((Mouse.getY / GLFrustum.screenHeight) * 2 - 1) * yScale).toFloat,
           -5
         ),
         new Vector3(0, 0, 0),
-        new Vector3(1, 0, 0) * lightIntensity
+        new Vector3(1, 0.5f, 0.5f) * lightIntensity
       )
     }
 
     if (!wasRightButtonDown && Mouse.isButtonDown(1)) {
       lights = lights :+ new FallingLight(
         new Vector3(
-          (((Mouse.getX / 1280.0) * 2 - 1) * xScale).toFloat,
-          (((Mouse.getY / 720.0) * 2 - 1) * yScale).toFloat,
+          (((Mouse.getX / GLFrustum.screenWidth) * 2 - 1) * xScale).toFloat,
+          (((Mouse.getY / GLFrustum.screenHeight) * 2 - 1) * yScale).toFloat,
           -5
         ),
         new Vector3(0, 0, 0),
-        new Vector3(0, 0, 1) * lightIntensity
+        new Vector3(0.5f, 0.5f, 1) * lightIntensity
       )
     }
 
@@ -171,13 +169,11 @@ class GS_Game extends GameState {
   }
 
   def draw() = {
-    val near = 0.1f;
-    val far = 100f;
     glLoadIdentity
     glClear(GL_COLOR_BUFFER_BIT)
     glClear(GL_DEPTH_BUFFER_BIT)
 
-    gbuffer.bindForGeomPass(near, far)
+    gbuffer.bindForGeomPass(GLFrustum.nearClippingPlane, GLFrustum.farClippingPlane)
       glMatrixMode(GL_MODELVIEW)
       glPushMatrix()
         glTranslated(0.0, 2 * sin(y), -8.4)
@@ -194,9 +190,26 @@ class GS_Game extends GameState {
       glPopMatrix()
     gbuffer.unbindForGeomPass()
 
-    gbuffer.bindForLightPass(near, far)
+    gbuffer.bindForLightPass(GLFrustum.nearClippingPlane, GLFrustum.farClippingPlane)
       val program = ShaderProgram.getActiveShader()
-      lights.grouped(10) foreach { lst =>
+      var lightsToDraw = lights map (_.light)
+
+      val mouseLightDistance = 5
+      val hAngle = 90
+      val vAngle = 59
+      val xScale = tan((hAngle * Pi / 180) / 2) * 2 * mouseLightDistance
+      val yScale = tan((vAngle * Pi / 180) / 2) * 2 * mouseLightDistance
+
+      lightsToDraw = lightsToDraw :+ new Light(
+        new Vector3(1, 1, 1),
+        new Vector3(
+          (((Mouse.getX / GLFrustum.screenWidth) * 2 - 1) * xScale).toFloat,
+          (((Mouse.getY / GLFrustum.screenHeight) * 2 - 1) * yScale).toFloat,
+          -5
+        )
+      )
+
+      lightsToDraw.grouped(10) foreach { lst =>
         val uNumLightsLocation = glGetUniformLocation(program.id, "uNumLights")
         glUniform1i(uNumLightsLocation, lst.length)
 
@@ -204,7 +217,7 @@ class GS_Game extends GameState {
           val irradianceLocation = glGetUniformLocation(program.id, "uLightIrradiance[" + i + "]")
           val positionLocation = glGetUniformLocation(program.id, "uLightPositions[" + i + "]")
 
-          lst(i).light.set(irradianceLocation, positionLocation)
+          lst(i).set(irradianceLocation, positionLocation)
         }
 
         drawScreenVBO()

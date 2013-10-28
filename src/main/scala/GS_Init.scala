@@ -1,7 +1,6 @@
 package com.awesome 
 
 import org.lwjgl.opengl.GL11._
-import org.lwjgl.util.glu.GLU;
 import org.lwjgl.opengl.{
   Display, 
   DisplayMode
@@ -23,8 +22,7 @@ class GS_Init extends GameState {
     glClearColor(0f, 0f, 0f, 1f)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity
-    GLU.gluPerspective(90, screenWidth.toFloat / screenHeight, 0.1f, 1000)
-    GLU.gluLookAt(0, 0, 0, 0, 0, -10, 0, 1, 0);
+    GLFrustum.setFrustrum(90, screenWidth, screenHeight, 0.1f, 1000)
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity
 
