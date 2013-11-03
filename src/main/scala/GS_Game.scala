@@ -35,8 +35,10 @@ class GS_Game extends GameState {
     }
   }
 
-  val m = new Model("crate_multitexture.dae")
-  val m2 = new Model("sphere.dae")
+  val m = Model.fromFile("crate_multitexture.dae")
+  m.genBuffers()
+  //val m2 = Model.fromFile("sphere.dae")
+  val sceneGraph = Level.fromModel(m, 0.5f)
   val screenVBO = glGenBuffers()
   val gbuffer = new GBuffer()
   gbuffer.setup(1280, 720)
@@ -173,22 +175,27 @@ class GS_Game extends GameState {
     glClear(GL_COLOR_BUFFER_BIT)
     glClear(GL_DEPTH_BUFFER_BIT)
 
+    glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+
     gbuffer.bindForGeomPass(GLFrustum.nearClippingPlane, GLFrustum.farClippingPlane)
       glMatrixMode(GL_MODELVIEW)
       glPushMatrix()
-        glTranslated(0.0, 2 * sin(y), -8.4)
+        glTranslated(2.0, 2 * sin(y), -8.4)
+        glRotated(angle, 0, 1, 0)
+
+        //m.draw()
+        sceneGraph.draw()
+      glPopMatrix()
+
+      glPushMatrix()
+        glTranslated(-2.0, 2 * sin(y + 3.14), -8.0)
         glRotated(angle, 0, 1, 0)
 
         m.draw()
       glPopMatrix()
-
-      glPushMatrix()
-        glTranslated(-0.0, 2 * sin(y + 3.14), -8.0)
-        glRotated(angle, 0, 1, 0)
-
-        m2.draw()
-      glPopMatrix()
     gbuffer.unbindForGeomPass()
+
+    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
     gbuffer.bindForLightPass(GLFrustum.nearClippingPlane, GLFrustum.farClippingPlane)
       val program = ShaderProgram.getActiveShader()

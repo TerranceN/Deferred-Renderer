@@ -1,0 +1,30 @@
+Header
+------
+octree levels
+materials offset
+geometry data offset
+
+Materials
+---------
+number of materials
+// For each material:
+    unique material name
+    8bit flags (whether each input is a texture [1] or color [0]) // texture names are cstrings, colors are 4 floats
+    diffuse
+    specular
+    shininess // one float
+
+Geometry Data
+-------------
+// sorted by x then y then z
+// so (0, 0, 0), (1, 0, 0), (0, 1, 0), (1, 1, 0), (0, 0, 1), etc
+number of models (each one is a section cut off by the octree)
+// for each model:
+    number of sections in the current model (each section has a different material)
+    // for each section:
+        material-name
+        number of verticies
+        vertex data flags (whether texCoord and normal data are given)
+        vertex
+        normal (optional)
+        texCoord (optional)
