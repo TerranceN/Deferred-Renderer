@@ -13,10 +13,10 @@ class SceneGraphNode(var children:Either[List[GameObject], List[SceneGraphNode]]
     case Left(objects) => if (objects.isEmpty) positionBounds
                             else (objects map (_.getBoundingBox) fold positionBounds) ((x, y) => x.combine(y))
   }
-  def draw() {
-    children match {
-      case Right(nodes) => nodes map (_.draw())
-      case Left(objects) => objects map (_.draw())
+  def draw():Int = {
+    return children match {
+      case Right(nodes) => nodes.foldLeft(0)((x, y) => y.draw() + x)
+      case Left(objects) => objects.foldLeft(0)((x, y) => { y.draw(); 1 + x } )
     }
   }
   def addObject(anObject:GameObject) {

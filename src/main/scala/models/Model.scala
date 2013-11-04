@@ -19,12 +19,15 @@ import com.awesome.vectors._
 class RenderSection(
 val mtl:Material,
 val data:Array[Float],
-val vertexOffset:Int,
-val normalOffset:Int,
-val texCoordOffset:Int) {
+val positionDataSize:Int,
+val normalDataSize:Int,
+val texCoordDataSize:Int) {
   var dataBufferId = 0
 
-  val stride = vertexOffset + normalOffset + texCoordOffset
+  val stride = positionDataSize + normalDataSize + texCoordDataSize
+  val vertexDataSize = 4 * stride
+  val normalOffset = 4 * positionDataSize
+  val texCoordOffset = normalOffset + 4 * normalDataSize
   val numVerticies = data.length / stride
 
   //data.grouped(stride) foreach { list =>
@@ -65,43 +68,13 @@ val texCoordOffset:Int) {
       glEnableVertexAttribArray(aNormalLocation)
       glEnableVertexAttribArray(aTexCoordLocation)
 
-      glActiveTexture(GL_TEXTURE1)
-      glBindTexture(GL_TEXTURE_2D, 0)
-      mtl.diffuse match {
-        case Right(t) => {
-          t.bind
-          program.setUniform1i("uDiffuseSampler", 1)
-          program.setUniform1f("uDiffuseTexture", 1.0f)
-        }
-        case Left(color) => {
-          glDisable(GL_TEXTURE_2D)
-          program.setUniform4f("uDiffuseColor", color.x, color.y, color.z, color.w)
-          program.setUniform1f("uDiffuseTexture", 0.0f)
-        }
-      }
-
-      glActiveTexture(GL_TEXTURE2)
-      glBindTexture(GL_TEXTURE_2D, 0)
-      mtl.specular match {
-        case Right(t) => {
-          t.bind
-          program.setUniform1i("uSpecularSampler", 2)
-          program.setUniform1f("uSpecularTexture", 1.0f)
-        }
-        case Left(color) => {
-          glDisable(GL_TEXTURE_2D);
-          program.setUniform4f("uSpecularColor", color.x, color.y, color.z, color.w)
-          program.setUniform1f("uSpecularTexture", 0.0f)
-        }
-      }
-
-      program.setUniform1f("uShininess", mtl.shininess)
+      mtl.bind()
 
       glBindBuffer(GL_ARRAY_BUFFER, dataBufferId)
 
-      glVertexAttribPointer(aCoordLocation, 3, GL_FLOAT, false, stride*4, 0)
-      glVertexAttribPointer(aNormalLocation, 3, GL_FLOAT, false, stride*4, 3*4)
-      glVertexAttribPointer(aTexCoordLocation, 2, GL_FLOAT, false, stride*4, 6*4)
+      glVertexAttribPointer(aCoordLocation, 3, GL_FLOAT, false, vertexDataSize, 0)
+      glVertexAttribPointer(aNormalLocation, 3, GL_FLOAT, false, vertexDataSize, normalOffset)
+      glVertexAttribPointer(aTexCoordLocation, 2, GL_FLOAT, false, vertexDataSize, texCoordOffset)
 
       glDrawArrays(GL_TRIANGLES, 0, numVerticies)
 
@@ -172,11 +145,11 @@ object Model {
     var normals:Array[Float] = Array()
 
     val geometry = (file \\ "geometry")(0)
-    val geometryName:String = (geometry \ "@name").text
+    val geometryName:String = (geometry \ "@id").text
 
-    val meshId = geometryName + "-mesh-positions-array"
-    val normalsId = geometryName + "-mesh-normals-array"
-    val mapId = geometryName + "-mesh-map-0-array"
+    val meshId = geometryName + "-positions-array"
+    val normalsId = geometryName + "-normals-array"
+    val mapId = geometryName + "-map-0-array"
 
     (geometry \\ "float_array") map (floatArray => (floatArray \ "@id").text match {
       case `meshId` => {

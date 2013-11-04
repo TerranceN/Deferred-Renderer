@@ -13,6 +13,7 @@ import scala.collection.mutable.Stack
 object Game extends App {
   val fps = 60
   var gameStates = new Stack[GameState]
+  var lastFrameTime = 0l
   gameStates.push(new GS_Init)
   gameStates.head.init
 
@@ -21,7 +22,7 @@ object Game extends App {
     val currentState = gameStates.head
 
     // update the current state
-    currentState.update(1d / fps.toDouble)
+    currentState.update(lastFrameTime / 1000000000d)
 
     // if that update caused the state to die, remove to from the stack
     // otherwise, draw the state
@@ -41,9 +42,13 @@ object Game extends App {
     }
 
     // calculate the time taken and delay the game accordingly
-    val endTime = System.nanoTime
-    val delayTime = (1000d / fps.toDouble) - ((endTime - startTime) / 1000000)
-    if (delayTime > 0) Thread.sleep(delayTime.toInt)
+    //val endTime = System.nanoTime
+    //val delayTime = (1000d / fps.toDouble) - ((endTime - startTime) / 1000000)
+    //if (delayTime > 0) Thread.sleep(delayTime.toInt)
+    if (lastFrameTime > 0) {
+      Console.println("fps: " + (1000000000d / lastFrameTime))
+    }
+    lastFrameTime = System.nanoTime - startTime
   }
 
   Display.destroy()

@@ -53,7 +53,7 @@ object Level {
 
       // for each triangle
       part.data.grouped(part.stride * 3) foreach { triangleData =>
-        var vertexList:List[(Int, Boolean, Array[Float])] = List()
+        var vertexList:List[(Vector3, Boolean, Array[Float])] = List()
         var vert = triangleData.grouped(part.stride).toList
         var verts = (vert zip vert.indices map { case (lst, index) => (new Vector3(lst(0), lst(1), lst(2)), index) }).toList
         var edges = (verts.sliding(2).toList map { case Seq(a, b) => (a, b) }).toList
@@ -67,7 +67,7 @@ object Level {
           val p2Side = plane.whichSide(p2)
           //Console.println(p1.x + ", " + p1.y + ", " + p1.z)
           //Console.println(p2.x + ", " + p2.y + ", " + p2.z)
-          vertexList = (vertexList.length, p1Side == 0, p1Data) :: vertexList
+          vertexList = (p1, p1Side == 0, p1Data) :: vertexList
           // check for intersections
           // only include intersections when neither point is on the plane
           if (p1Side != 0 && p2Side != 0) {
@@ -87,7 +87,7 @@ object Level {
                 //Console.println("iTex = " + iTexCoord.x + ", " + iTexCoord.y)
                 val intersectionData:Array[Float] = Array(i.x, i.y, i.z, iNorm.x, iNorm.y, iNorm.z, iTexCoord.x, iTexCoord.y)
                 //Console.println("Intersection: " + i.x + ", " + i.y + ", " + i.z)
-                vertexList = (vertexList.length, true, intersectionData) :: vertexList
+                vertexList = (i, true, intersectionData) :: vertexList
                 intersections = (i, intersectionData) :: intersections
               }
               case _ => {}
@@ -109,6 +109,7 @@ object Level {
           }
           // first side
           var numDataAdded = 0
+          var resultIndex:Int = -1
           for (i <- 0 until 2) {
             var foundIntersection = i match {
               case 0 => false
@@ -117,22 +118,25 @@ object Level {
             var lastDataAdded:Array[Float] = null
             var numVertsAdded = 0
             var firstVertexData:Array[Float] = null
+            var dataBuffer:Array[Float] = Array()
 
             //Console.println("indicies: ")
 
-            for ((index, isIntersection, vertexData) <- vertexList) {
+            for ((point, isIntersection, vertexData) <- vertexList) {
               if (!foundIntersection || isIntersection) {
+                if (!isIntersection) {
+                  var side = plane.whichSide(point)
+                  resultIndex = if (side == -1) 0 else 1
+                }
                 if (numVertsAdded > 2 && numVertsAdded % 3 == 0 && lastDataAdded != null) {
-                  data(i) = data(i) ++ lastDataAdded
+                  dataBuffer = dataBuffer ++ lastDataAdded
                   numDataAdded += lastDataAdded.length
                   numVertsAdded += 1
-                  //Console.println("repeat ^")
                 }
-                data(i) = data(i) ++ vertexData
+                dataBuffer = dataBuffer ++ vertexData
                 lastDataAdded = vertexData
                 numDataAdded += vertexData.length
                 numVertsAdded += 1
-                //Console.println(index + ", " + isIntersection)
                 if (firstVertexData == null) {
                   firstVertexData = vertexData
                 }
@@ -142,9 +146,11 @@ object Level {
               }
             }
             if (numVertsAdded % 3 == 2) {
-              data(i) = data(i) ++ firstVertexData
+              dataBuffer = dataBuffer ++ firstVertexData
               numDataAdded += firstVertexData.length
             }
+
+            data(resultIndex) = data(resultIndex) ++ dataBuffer
           }
           //Console.println("Due to intersections, replaced triange data with " + numDataAdded + " floats")
         } else {
@@ -154,13 +160,15 @@ object Level {
       }
 
       for (i <- 0 until 2) {
-        buffer(i) = Some(new RenderSection(
-          part.mtl,
-          data(i),
-          part.vertexOffset,
-          part.normalOffset,
-          part.texCoordOffset
-        ))
+        if (!data(i).isEmpty) {
+          buffer(i) = Some(new RenderSection(
+            part.mtl,
+            data(i),
+            part.positionDataSize,
+            part.normalDataSize,
+            part.texCoordDataSize
+          ))
+        }
       }
 
       return buffer
@@ -227,13 +235,17 @@ object Level {
             lower + subIndexes * subSectionSize,
             lower + (subIndexes + new Vector3(1)) * subSectionSize)
           // TODO: Change this to a recursive call until sectionSize is small enough
-          val m = new Model(sections(i))
+          if (!sections(i).isEmpty) {
+            val m = new Model(sections(i))
 
-          if (octreeLevel <= 1) {
-            m.genBuffers
-            nodes = new SceneGraphNode(List(new LevelPiece(m)), bounds) :: nodes
+            if (octreeLevel <= 1) {
+              m.genBuffers
+              nodes = new SceneGraphNode(List(new LevelPiece(m)), bounds) :: nodes
+            } else {
+              nodes = generateOctree(m, octreeLevel - 1, bounds.lower) :: nodes
+            }
           } else {
-            nodes = generateOctree(m, octreeLevel - 1, bounds.lower) :: nodes
+            nodes = new SceneGraphNode(Right(List():List[SceneGraphNode]), bounds) :: nodes
           }
         }
 
@@ -242,8 +254,6 @@ object Level {
     }
 
     val root:SceneGraphNode = generateOctree(model, octreeLevels, cubicBounds.lower)
-
-    Console.println(triangeCount)
 
     return root
   }
