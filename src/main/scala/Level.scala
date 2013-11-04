@@ -244,7 +244,6 @@ object Level {
 
             nodes = generateOctree(m, octreeLevel - 1, bounds.lower) :: nodes
           } else {
-            Console.println("Empty Section!")
             nodes = new SceneGraphNode(Right(List():List[SceneGraphNode]), bounds) :: nodes
           }
         }

@@ -72,7 +72,7 @@ void main() {
         float lightDepth = lightPosition.z;
 
         if (lightDepth > depth) {
-            final_color += vec4(uLightIrradiance[i], 1) * pow(clamp(dot(normalize(vec3(eyeVec.xy, -1)), normalize(lightPosition)), 0, 1), 10000);
+            final_color += vec4(uLightIrradiance[i], 1) * pow(clamp(dot(normalize(vec3(eyeVec.x, eyeVec.y / 1.77777, -1)), normalize(lightPosition)), 0, 1), 1000);
         }
     }
 

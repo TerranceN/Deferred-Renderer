@@ -43,15 +43,18 @@ class GS_Game extends GameState {
   val m = Model.fromFile("crate_multitexture.dae")
   m.genBuffers()
   val level_geom = Model.fromFile("test_level.dae")
-  //val m2 = Model.fromFile("sphere.dae")
-  val sceneGraph = Level.fromModel(level_geom, 8)
+  val m2 = Model.fromFile("sphere.dae")
+  m2.genBuffers()
+  val sceneGraph = Level.fromModel(level_geom, 2)
   val screenVBO = glGenBuffers()
   val gbuffer = new GBuffer()
   gbuffer.setup(1280, 720)
 
   var lights:Array[FallingLight] = Array()
-  var wasLeftButtonDown:Boolean = false;
-  var wasRightButtonDown:Boolean = false;
+  var wasLeftButtonDown:Boolean = false
+  var wasRightButtonDown:Boolean = false
+  var wasMDown:Boolean = false
+  var mouseLightEnabled = true
 
   val mainSceneShader = new ShaderProgram(
     new VertexShader("shaders/mainScene.vert"),
@@ -125,7 +128,7 @@ class GS_Game extends GameState {
     val hAngle = GLFrustum.horizontalViewAngle
     val vAngle = GLFrustum.verticalViewAngle
     val xScale = tan(hAngle / 2) * mouseLightDistance
-    val yScale = tan(vAngle / 2) * mouseLightDistance * 1.775
+    val yScale = tan(vAngle / 2) * mouseLightDistance
 
     val lightIntensity = 1f
 
@@ -153,8 +156,13 @@ class GS_Game extends GameState {
       )
     }
 
+    if (Keyboard.isKeyDown(Keyboard.KEY_M) && !wasMDown) {
+      mouseLightEnabled = !mouseLightEnabled
+    }
+
     wasLeftButtonDown = Mouse.isButtonDown(0)
     wasRightButtonDown = Mouse.isButtonDown(1)
+    wasMDown = Keyboard.isKeyDown(Keyboard.KEY_M)
 
     var newLights:Array[FallingLight] = Array()
     for (l <- lights) {
@@ -176,6 +184,32 @@ class GS_Game extends GameState {
     }
   }
 
+  def drawGeometry() {
+    glMatrixMode(GL_MODELVIEW)
+    glPushMatrix()
+      glTranslated(0.0, 0, -10.4)
+      glRotated(80, 0, 1, 0)
+
+      //m.draw()
+      sceneGraph.draw()
+      //Console.println("Number of model draws: " + sceneGraph.draw())
+    glPopMatrix()
+
+    glPushMatrix()
+      glTranslated(1.5, 2 * sin(y + 3.14), -8.0)
+      glRotated(angle, 0, 1, 0)
+
+      m.draw()
+    glPopMatrix()
+
+    glPushMatrix()
+      glTranslated(-1.5, 2 * sin(y), -8.0)
+      glRotated(angle, 0, 1, 0)
+
+      m2.draw()
+    glPopMatrix()
+  }
+
   def draw() = {
     glLoadIdentity
     glClear(GL_COLOR_BUFFER_BIT)
@@ -184,23 +218,7 @@ class GS_Game extends GameState {
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     gbuffer.bindForGeomPass(GLFrustum.nearClippingPlane, GLFrustum.farClippingPlane)
-      m.renderSections(0).mtl.bind()
-      glMatrixMode(GL_MODELVIEW)
-      glPushMatrix()
-        glTranslated(0.0, 0, -10.4)
-        glRotated(80, 0, 1, 0)
-
-        //m.draw()
-        sceneGraph.draw()
-        //Console.println("Number of model draws: " + sceneGraph.draw())
-      glPopMatrix()
-
-      glPushMatrix()
-        glTranslated(-0.0, 2 * sin(y + 3.14), -8.0)
-        glRotated(angle, 0, 1, 0)
-
-        m.draw()
-      glPopMatrix()
+      drawGeometry()
     gbuffer.unbindForGeomPass()
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -213,16 +231,18 @@ class GS_Game extends GameState {
       val hAngle = GLFrustum.horizontalViewAngle
       val vAngle = GLFrustum.verticalViewAngle
       val xScale = tan(hAngle / 2) * mouseLightDistance
-      val yScale = tan(vAngle / 2) * mouseLightDistance * 1.775
+      val yScale = tan(vAngle / 2) * mouseLightDistance
 
-      lightsToDraw = lightsToDraw :+ new Light(
-        new Vector3(1, 1, 1),
-        new Vector3(
-          (((Mouse.getX / GLFrustum.screenWidth) * 2 - 1) * xScale).toFloat,
-          (((Mouse.getY / GLFrustum.screenHeight) * 2 - 1) * yScale).toFloat,
-          -5
+      if (mouseLightEnabled) {
+        lightsToDraw = lightsToDraw :+ new Light(
+          new Vector3(1, 1, 1),
+          new Vector3(
+            (((Mouse.getX / GLFrustum.screenWidth) * 2 - 1) * xScale).toFloat,
+            (((Mouse.getY / GLFrustum.screenHeight) * 2 - 1) * yScale).toFloat,
+            -5
+          )
         )
-      )
+      }
 
       lightsToDraw.grouped(10) foreach { lst =>
         val uNumLightsLocation = glGetUniformLocation(program.id, "uNumLights")
@@ -245,8 +265,6 @@ class GS_Game extends GameState {
       mainSceneShader.setUniform1i("uSampler", 0)
       drawScreenVBO()
     mainSceneShader.unbind()
-
-    //Console.println(lights.length)
 
     checkError
   }
