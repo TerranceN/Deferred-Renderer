@@ -25,7 +25,7 @@ class GS_Game extends GameState {
   class FallingLight(initPosition:Vector3, var velocity:Vector3, val initIrradiance:Vector3) {
     val light = new Light(initIrradiance, initPosition);
     var life:Double = 1;
-    var lifeDirection = 1;
+    var lifeDirection = 4;
 
     def update(deltaTime:Double) {
       velocity += new Vector3(0, -10, 0) * deltaTime.toFloat
@@ -122,10 +122,10 @@ class GS_Game extends GameState {
     angle += 40 * deltaTime
 
     val mouseLightDistance = 5
-    val hAngle = 90
-    val vAngle = 59
-    val xScale = tan((hAngle * Pi / 180) / 2) * 2 * mouseLightDistance
-    val yScale = tan((vAngle * Pi / 180) / 2) * 2 * mouseLightDistance
+    val hAngle = GLFrustum.horizontalViewAngle
+    val vAngle = GLFrustum.verticalViewAngle
+    val xScale = tan(hAngle / 2) * mouseLightDistance
+    val yScale = tan(vAngle / 2) * mouseLightDistance * 1.775
 
     val lightIntensity = 1f
 
@@ -210,10 +210,10 @@ class GS_Game extends GameState {
       var lightsToDraw = lights map (_.light)
 
       val mouseLightDistance = 5
-      val hAngle = 90
-      val vAngle = 59
-      val xScale = tan((hAngle * Pi / 180) / 2) * 2 * mouseLightDistance
-      val yScale = tan((vAngle * Pi / 180) / 2) * 2 * mouseLightDistance
+      val hAngle = GLFrustum.horizontalViewAngle
+      val vAngle = GLFrustum.verticalViewAngle
+      val xScale = tan(hAngle / 2) * mouseLightDistance
+      val yScale = tan(vAngle / 2) * mouseLightDistance * 1.775
 
       lightsToDraw = lightsToDraw :+ new Light(
         new Vector3(1, 1, 1),

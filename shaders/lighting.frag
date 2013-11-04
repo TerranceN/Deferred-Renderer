@@ -67,6 +67,13 @@ void main() {
         final_color += lightingColors * vec4(uLightIrradiance[i], 1) * cosTi * att;
 
         final_color += diffuse * ambientIntensity * att * vec4(uLightIrradiance[i], 1);
+
+        vec3 lightPosition = (gl_ModelViewMatrix * vec4(uLightPositions[i], 1)).xyz;
+        float lightDepth = lightPosition.z;
+
+        if (lightDepth > depth) {
+            final_color += vec4(uLightIrradiance[i], 1) * pow(clamp(dot(normalize(vec3(eyeVec.xy, -1)), normalize(lightPosition)), 0, 1), 10000);
+        }
     }
 
     final_color += texture2D(uPreviousLightingSampler, texCoord);
