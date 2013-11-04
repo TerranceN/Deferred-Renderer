@@ -22,20 +22,16 @@ class LevelPiece(val model:Model) extends GameObject {
 }
 
 object Level {
-  def fromModel(model:Model, sizeCutoff:Float):SceneGraphNode = {
+  def fromModel(model:Model, minSize:Float):SceneGraphNode = {
 
     var triangeCount:Int = 0
 
     var bounds = model.getBoundingBox
     var boundsSize = bounds.size
     var maxSize = max(boundsSize.x, max(boundsSize.y, boundsSize.z))
-    var cubicBounds = new BoundingBox(bounds.lower, bounds.lower + new Vector3(maxSize))
-
-    //Console.println("maxSize: " + maxSize)
-
-    var octreeLevels = ceil(log(maxSize / sizeCutoff) / log(2)).toInt
-    Console.println("levels: " + octreeLevels)
-    Console.println(maxSize)
+    var octreeLevels = ceil(log(maxSize / minSize) / log(2)).toInt
+    var boundsMaxSize = pow(2, octreeLevels).toFloat * minSize
+    var cubicBounds = new BoundingBox(bounds.lower, bounds.lower + new Vector3(boundsMaxSize))
 
     var cellSize:Double = maxSize / (pow(2, octreeLevels))
 
@@ -109,7 +105,7 @@ object Level {
           }
           // first side
           var numDataAdded = 0
-          var resultIndex:Int = -1
+          var resultIndex:Int = 0
           for (i <- 0 until 2) {
             var foundIntersection = i match {
               case 0 => false
@@ -155,7 +151,14 @@ object Level {
           //Console.println("Due to intersections, replaced triange data with " + numDataAdded + " floats")
         } else {
           triangeCount += 1
-          data(0) = data(0) ++ triangleData
+          var resultIndex:Int = 0
+          for ((point, isIntersection, vertexData) <- vertexList) {
+            if (!isIntersection) {
+              var side = plane.whichSide(point)
+              resultIndex = if (side == -1) 0 else 1
+            }
+          }
+          data(resultIndex) = data(resultIndex) ++ triangleData
         }
       }
 
@@ -187,9 +190,9 @@ object Level {
     def splitIntoEight(
       part:RenderSection,
       middle:Vector3):ArrayBuffer[Option[RenderSection]] = {
-        var xPlane = new Plane(new Vector3(1, 0, 0), new Vector3(middle.x, 0, 0))
-        var yPlane = new Plane(new Vector3(0, 1, 0), new Vector3(0, middle.y, 0))
-        var zPlane = new Plane(new Vector3(0, 0, 1), new Vector3(0, 0, middle.z))
+        var xPlane = new Plane(new Vector3(1, 0, 0), middle)
+        var yPlane = new Plane(new Vector3(0, 1, 0), middle)
+        var zPlane = new Plane(new Vector3(0, 0, 1), middle)
 
         val sections = splitOnPlane(part, zPlane) flatMap splitFlatMapFunction(yPlane) flatMap splitFlatMapFunction(xPlane)
 
@@ -197,10 +200,11 @@ object Level {
     }
 
     def generateOctree(m:Model, octreeLevel:Int, lower:Vector3):SceneGraphNode = {
-      var sectionSize = (maxSize / (pow(2, octreeLevels - octreeLevel))).toFloat
+      var sectionSize = (pow(2, octreeLevel)).toFloat * minSize
 
-      if (octreeLevel == 0) {
+      if (octreeLevel <= 0) {
         // make node with models
+        m.genBuffers
         return new SceneGraphNode(
           List(new LevelPiece(m)),
           new BoundingBox(lower, lower + new Vector3(sectionSize)))
@@ -233,18 +237,14 @@ object Level {
           var subIndexes = new Vector3(i % 2, i / 2 % 2, i / 4 % 2)
           var bounds = new BoundingBox(
             lower + subIndexes * subSectionSize,
-            lower + (subIndexes + new Vector3(1)) * subSectionSize)
+            lower + subIndexes * subSectionSize + new Vector3(subSectionSize))
           // TODO: Change this to a recursive call until sectionSize is small enough
           if (!sections(i).isEmpty) {
             val m = new Model(sections(i))
 
-            if (octreeLevel <= 1) {
-              m.genBuffers
-              nodes = new SceneGraphNode(List(new LevelPiece(m)), bounds) :: nodes
-            } else {
-              nodes = generateOctree(m, octreeLevel - 1, bounds.lower) :: nodes
-            }
+            nodes = generateOctree(m, octreeLevel - 1, bounds.lower) :: nodes
           } else {
+            Console.println("Empty Section!")
             nodes = new SceneGraphNode(Right(List():List[SceneGraphNode]), bounds) :: nodes
           }
         }

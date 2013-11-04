@@ -24,13 +24,18 @@ import lighting._
 class GS_Game extends GameState {
   class FallingLight(initPosition:Vector3, var velocity:Vector3, val initIrradiance:Vector3) {
     val light = new Light(initIrradiance, initPosition);
-    var life:Double = 50;
+    var life:Double = 1;
+    var lifeDirection = 1;
 
     def update(deltaTime:Double) {
       velocity += new Vector3(0, -10, 0) * deltaTime.toFloat
       light.position += velocity * deltaTime.toFloat
 
-      life -= 50 * deltaTime;
+      life += lifeDirection * 50 * deltaTime;
+      if (life >= 50) {
+        life = 50
+        lifeDirection = -1
+      }
       light.intensity = initIrradiance * (life.toFloat / 50)
     }
   }
@@ -39,7 +44,7 @@ class GS_Game extends GameState {
   m.genBuffers()
   val level_geom = Model.fromFile("test_level.dae")
   //val m2 = Model.fromFile("sphere.dae")
-  val sceneGraph = Level.fromModel(level_geom, 0.5f)
+  val sceneGraph = Level.fromModel(level_geom, 8)
   val screenVBO = glGenBuffers()
   val gbuffer = new GBuffer()
   gbuffer.setup(1280, 720)
@@ -182,11 +187,12 @@ class GS_Game extends GameState {
       m.renderSections(0).mtl.bind()
       glMatrixMode(GL_MODELVIEW)
       glPushMatrix()
-        glTranslated(0.0, 0, -8.4)
-        glRotated(60, 0, 1, 0)
+        glTranslated(0.0, 0, -10.4)
+        glRotated(80, 0, 1, 0)
 
         //m.draw()
-        Console.println("Number of model draws: " + sceneGraph.draw())
+        sceneGraph.draw()
+        //Console.println("Number of model draws: " + sceneGraph.draw())
       glPopMatrix()
 
       glPushMatrix()
@@ -240,7 +246,7 @@ class GS_Game extends GameState {
       drawScreenVBO()
     mainSceneShader.unbind()
 
-    Console.println(lights.length)
+    //Console.println(lights.length)
 
     checkError
   }

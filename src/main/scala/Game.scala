@@ -46,7 +46,7 @@ object Game extends App {
     //val delayTime = (1000d / fps.toDouble) - ((endTime - startTime) / 1000000)
     //if (delayTime > 0) Thread.sleep(delayTime.toInt)
     if (lastFrameTime > 0) {
-      Console.println("fps: " + (1000000000d / lastFrameTime))
+      //Console.println("fps: " + (1000000000d / lastFrameTime))
     }
     lastFrameTime = System.nanoTime - startTime
   }
