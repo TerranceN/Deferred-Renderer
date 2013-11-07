@@ -11,11 +11,15 @@ import Keyboard._
 import scala.collection.mutable.Stack
 
 object Game extends App {
+  Console.println(System.getProperty("java.library.path"))
   val fps = 60
   var gameStates = new Stack[GameState]
-  var lastFrameTime = 0l
+  var lastFrameTime:Long = 0
   gameStates.push(new GS_Init)
   gameStates.head.init
+
+  var fpsCountStart:Long = System.nanoTime
+  var fpsFrameCount:Int = 0
 
   while (!Display.isCloseRequested && !gameStates.isEmpty) {
     val startTime = System.nanoTime
@@ -45,8 +49,12 @@ object Game extends App {
     //val endTime = System.nanoTime
     //val delayTime = (1000d / fps.toDouble) - ((endTime - startTime) / 1000000)
     //if (delayTime > 0) Thread.sleep(delayTime.toInt)
-    if (lastFrameTime > 0) {
-      //Console.println("fps: " + (1000000000d / lastFrameTime))
+    fpsFrameCount += 1
+    val fpsTimeDiff = System.nanoTime - fpsCountStart
+    if (fpsTimeDiff >= 1000000000) {
+      Console.println("fps: " + (1000000000d / (fpsTimeDiff / fpsFrameCount)))
+      fpsFrameCount = 0
+      fpsCountStart = System.nanoTime
     }
     lastFrameTime = System.nanoTime - startTime
   }

@@ -1,6 +1,7 @@
 #version 130
 
 const int MAX_LIGHTS = 10;
+const float PI = 3.1415926;
 
 in vec2 texCoord;
 in vec3 eyeVec;
@@ -19,12 +20,17 @@ uniform float uFarDistance;
 uniform float uNearDistance;
 
 vec3 positionFromDepth(float z) {
-    // Get x/w and y/w from the viewport position
-    vec4 vProjectedPos = vec4(eyeVec.xy / uNearDistance, z, 1);
-    // Transform by the inverse projection matrix
-    vec4 vPositionVS = gl_ProjectionMatrixInverse * vProjectedPos;
-    // Divide by w to get the view-space position
-    return vPositionVS.xyz / vPositionVS.w;
+    float hViewAngle = 90 * PI / 180;
+    float aspect = 1.7777777;
+    float f = 1 / tan(hViewAngle / 2);
+    vec2 clip = eyeVec.xy * -z;
+    return vec3(clip.x * aspect / f, clip.y / f, z);
+    //// Get x/w and y/w from the viewport position
+    //vec4 vProjectedPos = vec4(eyeVec.xy / uNearDistance, z, 1);
+    //// Transform by the inverse projection matrix
+    //vec4 vPositionVS = gl_ProjectionMatrixInverse * vProjectedPos;
+    //// Divide by w to get the view-space position
+    //return vPositionVS.xyz / vPositionVS.w;
 }
 
 void main() {
@@ -41,12 +47,13 @@ void main() {
     float attLinear = 0.0;
     float attQuad = 0.05;
 
-    float depth = texture2D(uNormalsDepthSampler, texCoord).a * -uFarDistance;
+    float fractionalDepth = texture2D(uNormalsDepthSampler, texCoord).a;
+    float depth = -(uNearDistance + fractionalDepth * uFarDistance);
 
-    vec3 viewRay = vec3(eyeVec.xy, 1);
+    vec3 viewRay = vec3(eyeVec.xyz);
     vec3 fragmentPosition = positionFromDepth(depth);
+    vec3 eye = normalize(fragmentPosition);
 
-    vec3 v = normalize(viewRay);
     vec3 n = normalize(texture2D(uNormalsDepthSampler, texCoord).xyz);
 
     float lightsToRender = min(uNumLights, MAX_LIGHTS);
@@ -56,14 +63,11 @@ void main() {
         float att = 1.0 / (attConst+(attLinear*distanceToLight)+(attQuad*distanceToLight*distanceToLight));
 
         vec3 lDir = normalize(difference);
-        vec3 h = normalize(v + lDir);
-        float cosTh = clamp(dot(n, h), 0, 1);
+        vec3 h = normalize(eye - lDir);
+        float cosTh = clamp(-dot(n, h), 0, 1);
         float cosTi = clamp(dot(n, lDir), 0, 1);
         float specularIntensity = pow(cosTh, uShininess);
-        vec4 lightingColors = diffuse;
-        if (cosTh > 0) {
-            lightingColors += specular * specularIntensity;
-        }
+        vec4 lightingColors = diffuse + specular * specularIntensity;
         final_color += lightingColors * vec4(uLightIrradiance[i], 1) * cosTi * att;
 
         final_color += diffuse * ambientIntensity * att * vec4(uLightIrradiance[i], 1);
@@ -72,11 +76,16 @@ void main() {
         float lightDepth = lightPosition.z;
 
         if (lightDepth > depth) {
-            final_color += vec4(uLightIrradiance[i], 1) * pow(clamp(dot(normalize(vec3(eyeVec.x, eyeVec.y / 1.77777, -1)), normalize(lightPosition)), 0, 1), 1000);
+            final_color += vec4(uLightIrradiance[i], 1) * pow(clamp(dot(eye, normalize(lightPosition)), 0, 1), 1000);
         }
     }
 
     final_color += texture2D(uPreviousLightingSampler, texCoord);
+
+    //final_color = vec4(vec3(fractionalDepth), 1);
+    if (fragmentPosition.y > 0) {
+        //final_color = vec4(vec2(fragmentPosition), 0, 1);
+    }
 
     gl_FragData[0] = final_color;
 }

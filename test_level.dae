@@ -5,14 +5,17 @@
       <author>Blender User</author>
       <authoring_tool>Blender 2.68.0 r58537</authoring_tool>
     </contributor>
-    <created>2013-11-03T21:55:37</created>
-    <modified>2013-11-03T21:55:37</modified>
+    <created>2013-11-04T16:54:17</created>
+    <modified>2013-11-04T16:54:17</modified>
     <unit name="meter" meter="1"/>
     <up_axis>Z_UP</up_axis>
   </asset>
   <library_images>
     <image id="brick_jpg" name="brick_jpg">
       <init_from>brick.jpg</init_from>
+    </image>
+    <image id="brick_greyscale_jpg" name="brick_greyscale_jpg">
+      <init_from>brick_greyscale.jpg</init_from>
     </image>
   </library_images>
   <library_effects>
@@ -28,6 +31,16 @@
             <source>brick_jpg-surface</source>
           </sampler2D>
         </newparam>
+        <newparam sid="brick_greyscale_jpg-surface">
+          <surface type="2D">
+            <init_from>brick_greyscale_jpg</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="brick_greyscale_jpg-sampler">
+          <sampler2D>
+            <source>brick_greyscale_jpg-surface</source>
+          </sampler2D>
+        </newparam>
         <technique sid="common">
           <phong>
             <emission>
@@ -40,10 +53,10 @@
               <texture texture="brick_jpg-sampler" texcoord="UVMap"/>
             </diffuse>
             <specular>
-              <color sid="specular">0.5 0.5 0.5 1</color>
+              <texture texture="brick_greyscale_jpg-sampler" texcoord="UVMap"/>
             </specular>
             <shininess>
-              <float sid="shininess">50</float>
+              <float sid="shininess">15</float>
             </shininess>
             <index_of_refraction>
               <float sid="index_of_refraction">1</float>

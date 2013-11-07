@@ -21,6 +21,7 @@ val shininess:Float) {
     diffuse match {
       case Right(t) => {
         t.bind
+        program.setUniform1i("uDiffuseNumComponents", t.numComponents)
         program.setUniform1i("uDiffuseSampler", 1)
         program.setUniform1f("uDiffuseTexture", 1.0f)
       }
@@ -36,6 +37,7 @@ val shininess:Float) {
     specular match {
       case Right(t) => {
         t.bind
+        program.setUniform1i("uSpecularNumComponents", t.numComponents)
         program.setUniform1i("uSpecularSampler", 2)
         program.setUniform1f("uSpecularTexture", 1.0f)
       }

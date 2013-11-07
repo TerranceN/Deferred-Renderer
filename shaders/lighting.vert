@@ -6,6 +6,8 @@ in vec2 aTexCoord;
 out vec2 texCoord;
 out vec3 eyeVec;
 
+uniform float uNearDistance;
+
 void main() {
     vec4 transformedCoord = gl_ModelViewMatrix * vec4(aCoord, 1.0);
     vec4 finishedCoord = gl_ProjectionMatrix * transformedCoord;

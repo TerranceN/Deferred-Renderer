@@ -43,9 +43,9 @@ class GS_Game extends GameState {
   val m = Model.fromFile("crate_multitexture.dae")
   m.genBuffers()
   val level_geom = Model.fromFile("test_level.dae")
-  val m2 = Model.fromFile("sphere.dae")
+  val m2 = Model.fromFile("sphere2.dae")
   m2.genBuffers()
-  val sceneGraph = Level.fromModel(level_geom, 2)
+  val sceneGraph = Level.fromModel(level_geom, 1)
   val screenVBO = glGenBuffers()
   val gbuffer = new GBuffer()
   gbuffer.setup(1280, 720)
@@ -125,20 +125,22 @@ class GS_Game extends GameState {
     angle += 40 * deltaTime
 
     val mouseLightDistance = 5
+    var normalizedMouse = new Vector2(
+      (Mouse.getX / GLFrustum.screenWidth) * 2 - 1,
+      (Mouse.getY / GLFrustum.screenHeight) * 2 - 1
+    )
+    var clip = normalizedMouse * (mouseLightDistance)
     val hAngle = GLFrustum.horizontalViewAngle
     val vAngle = GLFrustum.verticalViewAngle
-    val xScale = tan(hAngle / 2) * mouseLightDistance
-    val yScale = tan(vAngle / 2) * mouseLightDistance
+    val f = 1 / tan(hAngle / 2)
+
+    val view = new Vector3((clip.x * GLFrustum.aspectRatio / f).toFloat, (clip.y / f).toFloat, -mouseLightDistance)
 
     val lightIntensity = 1f
 
     if (!wasLeftButtonDown && Mouse.isButtonDown(0)) {
       lights = lights :+ new FallingLight(
-        new Vector3(
-          (((Mouse.getX / GLFrustum.screenWidth) * 2 - 1) * xScale).toFloat,
-          (((Mouse.getY / GLFrustum.screenHeight) * 2 - 1) * yScale).toFloat,
-          -5
-        ),
+        view,
         new Vector3(0, 0, 0),
         new Vector3(1, 0.5f, 0.5f) * lightIntensity
       )
@@ -146,11 +148,7 @@ class GS_Game extends GameState {
 
     if (!wasRightButtonDown && Mouse.isButtonDown(1)) {
       lights = lights :+ new FallingLight(
-        new Vector3(
-          (((Mouse.getX / GLFrustum.screenWidth) * 2 - 1) * xScale).toFloat,
-          (((Mouse.getY / GLFrustum.screenHeight) * 2 - 1) * yScale).toFloat,
-          -5
-        ),
+        view,
         new Vector3(0, 0, 0),
         new Vector3(0.5f, 0.5f, 1) * lightIntensity
       )
@@ -188,7 +186,7 @@ class GS_Game extends GameState {
     glMatrixMode(GL_MODELVIEW)
     glPushMatrix()
       glTranslated(0.0, 0, -10.4)
-      glRotated(80, 0, 1, 0)
+      glRotated(90, 0, 1, 0)
 
       //m.draw()
       sceneGraph.draw()
@@ -228,20 +226,19 @@ class GS_Game extends GameState {
       var lightsToDraw = lights map (_.light)
 
       val mouseLightDistance = 5
+      var normalizedMouse = new Vector2(
+        (Mouse.getX / GLFrustum.screenWidth) * 2 - 1,
+        (Mouse.getY / GLFrustum.screenHeight) * 2 - 1
+      )
+      var clip = normalizedMouse * (mouseLightDistance)
       val hAngle = GLFrustum.horizontalViewAngle
       val vAngle = GLFrustum.verticalViewAngle
-      val xScale = tan(hAngle / 2) * mouseLightDistance
-      val yScale = tan(vAngle / 2) * mouseLightDistance
+      val f = 1 / tan(hAngle / 2)
+
+      val view = new Vector3((clip.x * GLFrustum.aspectRatio / f).toFloat, (clip.y / f).toFloat, -mouseLightDistance)
 
       if (mouseLightEnabled) {
-        lightsToDraw = lightsToDraw :+ new Light(
-          new Vector3(1, 1, 1),
-          new Vector3(
-            (((Mouse.getX / GLFrustum.screenWidth) * 2 - 1) * xScale).toFloat,
-            (((Mouse.getY / GLFrustum.screenHeight) * 2 - 1) * yScale).toFloat,
-            -5
-          )
-        )
+        lightsToDraw = lightsToDraw :+ new Light(new Vector3(1, 1, 1), view)
       }
 
       lightsToDraw.grouped(10) foreach { lst =>
