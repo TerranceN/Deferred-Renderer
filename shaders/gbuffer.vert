@@ -7,6 +7,7 @@ in vec2 aTexCoord;
 out vec2 texCoord;
 out vec3 normal;
 out float depth;
+out vec3 eyeVec;
 
 uniform float uFarDistance;
 
@@ -15,7 +16,11 @@ void main() {
     vec4 finishedCoord = gl_ProjectionMatrix * transformedCoord;
 
     texCoord = aTexCoord;
+
     normal = gl_NormalMatrix * aNormal;
+
+    eyeVec = finishedCoord;
+
     depth = -transformedCoord.z / uFarDistance;
 
     gl_Position = finishedCoord;

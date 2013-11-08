@@ -40,12 +40,14 @@ class GS_Game extends GameState {
     }
   }
 
+  val normalMap = Texture.fromImage("normal.jpg")
+
   val m = Model.fromFile("crate_multitexture.dae")
   m.genBuffers()
   val level_geom = Model.fromFile("test_level.dae")
   val m2 = Model.fromFile("sphere2.dae")
   m2.genBuffers()
-  val sceneGraph = Level.fromModel(level_geom, 1)
+  val sceneGraph = Level.fromModel(level_geom, 100)
   val screenVBO = glGenBuffers()
   val gbuffer = new GBuffer()
   gbuffer.setup(1280, 720)
@@ -54,7 +56,9 @@ class GS_Game extends GameState {
   var wasLeftButtonDown:Boolean = false
   var wasRightButtonDown:Boolean = false
   var wasMDown:Boolean = false
+  var wasNDown:Boolean = false
   var mouseLightEnabled = true
+  var normalMapEnabled = true
 
   val mainSceneShader = new ShaderProgram(
     new VertexShader("shaders/mainScene.vert"),
@@ -158,9 +162,14 @@ class GS_Game extends GameState {
       mouseLightEnabled = !mouseLightEnabled
     }
 
+    if (Keyboard.isKeyDown(Keyboard.KEY_N) && !wasNDown) {
+      normalMapEnabled = !normalMapEnabled
+    }
+
     wasLeftButtonDown = Mouse.isButtonDown(0)
     wasRightButtonDown = Mouse.isButtonDown(1)
     wasMDown = Keyboard.isKeyDown(Keyboard.KEY_M)
+    wasNDown = Keyboard.isKeyDown(Keyboard.KEY_N)
 
     var newLights:Array[FallingLight] = Array()
     for (l <- lights) {
@@ -193,6 +202,8 @@ class GS_Game extends GameState {
       //Console.println("Number of model draws: " + sceneGraph.draw())
     glPopMatrix()
 
+    ShaderProgram.getActiveShader.setUniform1f("uNormalMapTexture", 0.0f)
+
     glPushMatrix()
       glTranslated(1.5, 2 * sin(y + 3.14), -8.0)
       glRotated(angle, 0, 1, 0)
@@ -216,6 +227,12 @@ class GS_Game extends GameState {
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     gbuffer.bindForGeomPass(GLFrustum.nearClippingPlane, GLFrustum.farClippingPlane)
+      glActiveTexture(GL_TEXTURE3)
+      normalMap.bind()
+      ShaderProgram.getActiveShader.setUniform1i("uNormalMapSampler", 3)
+      if (normalMapEnabled) {
+        ShaderProgram.getActiveShader.setUniform1f("uNormalMapTexture", 1.0f)
+      }
       drawGeometry()
     gbuffer.unbindForGeomPass()
 

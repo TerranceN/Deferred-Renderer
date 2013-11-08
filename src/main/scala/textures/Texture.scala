@@ -62,8 +62,9 @@ object Texture {
     } catch {
       case e:IllegalArgumentException => {
         Console.println("Warning: null passed to Texture.fromImage")
+        e.printStackTrace
       }
-      case e:IOException => {
+      case e:Exception => {
         Console.println("Error: Failed to load texture: " + fileName)
       }
     }

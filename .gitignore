@@ -7,3 +7,4 @@ target/*
 project/*/*
 lib_managed/*
 native_lib/*
+JAR/*
