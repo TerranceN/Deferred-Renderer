@@ -40,12 +40,12 @@ class GS_Game extends GameState {
     }
   }
 
-  val normalMap = Texture.fromImage("normal.jpg")
+  val normalMap = Texture.fromImage("assets/normal.jpg")
 
-  val m = Model.fromFile("crate_multitexture.dae")
+  val m = Model.fromFile("assets/crate_multitexture.dae")
   m.genBuffers()
-  val level_geom = Model.fromFile("test_level.dae")
-  val m2 = Model.fromFile("sphere2.dae")
+  val level_geom = Model.fromFile("assets/test_level.dae")
+  val m2 = Model.fromFile("assets/sphere2.dae")
   m2.genBuffers()
   val sceneGraph = Level.fromModel(level_geom, 100)
   val screenVBO = glGenBuffers()

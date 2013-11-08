@@ -10,6 +10,7 @@ import scala.xml._
 import java.io.File
 import scala.util.Random
 import scala.math._
+import scala.util.matching.Regex
 
 import com.awesome.BoundingBox
 import com.awesome.shaders._
@@ -133,6 +134,11 @@ class Model(var renderSections:List[RenderSection]) {
 
 object Model {
   def fromFile(fileName:String):Model = {
+    var filePathPattern = "(.*/)[^/]*".r
+    var fileDirectory =  (filePathPattern findFirstMatchIn fileName) match {
+      case Some(m) => m.group(1)
+      case None => ""
+    }
     var renderSections:List[RenderSection] = List()
     // load from file
     var file = XML.loadFile(new File(fileName))
@@ -174,7 +180,7 @@ object Model {
         val imageName = (surface \ "init_from").text
         val image = ((imageLibrary \ "image") filter (x => (x \ "@id").text == imageName))
         val imageFile = (image \ "init_from").text
-        return Right(Texture.fromImage(imageFile))
+        return Right(Texture.fromImage(fileDirectory + imageFile))
       } else if ((xml \ "color").length != 0) {
         val buf = (xml \ "color").text.split(" ") map (_.toFloat)
         return Left(new Vector4(buf(0), buf(1), buf(2), buf(3)))
