@@ -28,13 +28,13 @@ class GS_Game extends GameState {
     var lifeDirection = 4;
 
     def update(deltaTime:Double) {
-      velocity += new Vector3(0, -10, 0) * deltaTime.toFloat
+      //velocity += new Vector3(0, -10, 0) * deltaTime.toFloat
       light.position += velocity * deltaTime.toFloat
 
       life += lifeDirection * 50 * deltaTime;
       if (life >= 50) {
         life = 50
-        lifeDirection = -1
+        lifeDirection = -0
       }
       light.intensity = initIrradiance * (life.toFloat / 50)
     }
@@ -140,13 +140,13 @@ class GS_Game extends GameState {
 
     val view = new Vector3((clip.x * GLFrustum.aspectRatio / f).toFloat, (clip.y / f).toFloat, -mouseLightDistance)
 
-    val lightIntensity = 1f
+    val lightIntensity = 20f
 
     if (!wasLeftButtonDown && Mouse.isButtonDown(0)) {
       lights = lights :+ new FallingLight(
         view,
         new Vector3(0, 0, 0),
-        new Vector3(1, 0.5f, 0.5f) * lightIntensity
+        new Vector3(1, 0.1f, 0.1f) * lightIntensity
       )
     }
 
@@ -154,7 +154,7 @@ class GS_Game extends GameState {
       lights = lights :+ new FallingLight(
         view,
         new Vector3(0, 0, 0),
-        new Vector3(0.5f, 0.5f, 1) * lightIntensity
+        new Vector3(0.1f, 0.1f, 1) * lightIntensity
       )
     }
 
@@ -164,6 +164,16 @@ class GS_Game extends GameState {
 
     if (Keyboard.isKeyDown(Keyboard.KEY_N) && !wasNDown) {
       normalMapEnabled = !normalMapEnabled
+    }
+    
+    if (Keyboard.isKeyDown(Keyboard.KEY_L)) {
+      Console.println("Number of lights: " + lights.length)
+    }
+
+    if (Keyboard.isKeyDown(Keyboard.KEY_C)) {
+      lights foreach { l =>
+        l.lifeDirection = -4
+      }
     }
 
     wasLeftButtonDown = Mouse.isButtonDown(0)
@@ -255,7 +265,7 @@ class GS_Game extends GameState {
       val view = new Vector3((clip.x * GLFrustum.aspectRatio / f).toFloat, (clip.y / f).toFloat, -mouseLightDistance)
 
       if (mouseLightEnabled) {
-        lightsToDraw = lightsToDraw :+ new Light(new Vector3(1, 1, 1), view)
+        lightsToDraw = lightsToDraw :+ new Light(new Vector3(1.0f, 1f, 0.8f) * 5, view)
       }
 
       lightsToDraw.grouped(10) foreach { lst =>

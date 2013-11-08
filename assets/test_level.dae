@@ -56,7 +56,7 @@
               <texture texture="brick_greyscale_jpg-sampler" texcoord="UVMap"/>
             </specular>
             <shininess>
-              <float sid="shininess">15</float>
+              <float sid="shininess">25</float>
             </shininess>
             <index_of_refraction>
               <float sid="index_of_refraction">1</float>

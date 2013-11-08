@@ -3,6 +3,7 @@ package com.awesome.textures
 import org.lwjgl.opengl.GL11._
 import org.lwjgl.opengl.GL12._
 import org.lwjgl.opengl.GL13._
+import org.lwjgl.opengl.GL21._
 import org.lwjgl.opengl.GL30._
 import org.lwjgl.BufferUtils
 
@@ -11,7 +12,9 @@ import java.io.IOException
 import java.awt.image._
 import javax.imageio.ImageIO
 
-class Texture(image:BufferedImage) {
+class Texture(image:BufferedImage, deGamma:Boolean) {
+  def this(image:BufferedImage) = this(image, false)
+
   glEnable(GL_TEXTURE_2D)
 
   val id = glGenTextures
@@ -28,6 +31,11 @@ class Texture(image:BufferedImage) {
     case _ => -1
   }
 
+  val internalType = deGamma match {
+    case true => GL_SRGB
+    case false => GL_RGB
+  }
+
   val pixels = (image.getRaster.getDataBuffer).asInstanceOf[DataBufferByte].getData
   Console.println("inputType: " + inputType + ", pixel bytes: " + pixels.length)
   val buf = BufferUtils.createByteBuffer(pixels.length)
@@ -35,7 +43,7 @@ class Texture(image:BufferedImage) {
   buf.flip
 
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.getWidth, image.getHeight, 0, inputType, GL_UNSIGNED_BYTE, buf)
+  glTexImage2D(GL_TEXTURE_2D, 0, internalType, image.getWidth, image.getHeight, 0, inputType, GL_UNSIGNED_BYTE, buf)
 
   glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR); // Linear Filtering
   glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR); // Linear Filtering
@@ -53,12 +61,14 @@ class Texture(image:BufferedImage) {
 }
 
 object Texture {
-  def fromImage(fileName:String):Texture = {
+  def fromImage(fileName:String):Texture = fromImage(fileName, false)
+  def fromImage(fileName:String, deGamma:Boolean):Texture = {
     Console.println("Loading texture: " + fileName)
+    Console.println("deGamma: " + deGamma)
     try {
       val image = ImageIO.read(new File(fileName))
       Console.println("image size: " + image.getWidth + ", " + image.getHeight)
-      return new Texture(image)
+      return new Texture(image, deGamma)
     } catch {
       case e:IllegalArgumentException => {
         Console.println("Warning: null passed to Texture.fromImage")

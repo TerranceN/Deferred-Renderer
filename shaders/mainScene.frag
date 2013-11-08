@@ -5,7 +5,7 @@ in vec2 texCoord;
 uniform sampler2D uSampler;
 
 void main() {
-    float gamma = 1.5;
+    float gamma = 1.0 / 2.2;
 
     vec4 final_color = texture2D(uSampler, texCoord);
 

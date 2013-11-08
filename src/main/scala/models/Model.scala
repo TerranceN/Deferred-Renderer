@@ -171,7 +171,7 @@ object Model {
 
     (geometry \\ "polylist") map loadPolylist
 
-    def loadColorOrTexture(xml:Node):Either[Vector4, Texture] = {
+    def loadColorOrTexture(xml:Node, deGamma:Boolean):Either[Vector4, Texture] = {
       if ((xml \ "texture").length != 0) {
         val samplerName = ((xml \ "texture")(0) \ "@texture").text
         val sampler = ((file \\ "newparam") filter (x => (x \ "@sid").text == samplerName)) \ "sampler2D"
@@ -180,7 +180,7 @@ object Model {
         val imageName = (surface \ "init_from").text
         val image = ((imageLibrary \ "image") filter (x => (x \ "@id").text == imageName))
         val imageFile = (image \ "init_from").text
-        return Right(Texture.fromImage(fileDirectory + imageFile))
+        return Right(Texture.fromImage(fileDirectory + imageFile, deGamma))
       } else if ((xml \ "color").length != 0) {
         val buf = (xml \ "color").text.split(" ") map (_.toFloat)
         return Left(new Vector4(buf(0), buf(1), buf(2), buf(3)))
@@ -203,11 +203,11 @@ object Model {
       var shininessObject = 0f
 
       if (diffuse.length > 0) {
-        diffuseObject = loadColorOrTexture(diffuse(0))
+        diffuseObject = loadColorOrTexture(diffuse(0), true)
       }
 
       if (specular.length > 0 && shininess.length > 0) {
-        specularObject = loadColorOrTexture(specular(0))
+        specularObject = loadColorOrTexture(specular(0), false)
         shininessObject = (shininess \ "float").text.toFloat
       }
 

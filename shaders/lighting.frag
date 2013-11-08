@@ -43,9 +43,9 @@ void main() {
     vec4 final_color = vec4(0);
 
     // use this to mess around with att values: https://www.desmos.com/calculator/nmnaud1hrw
-    float attConst = 1.0;
-    float attLinear = 0.0;
-    float attQuad = 0.05;
+    float attConst = 1;
+    float attLinear = 2;
+    float attQuad = 1;
 
     float fractionalDepth = texture2D(uNormalsDepthSampler, texCoord).a;
     float depth = -(uNearDistance + fractionalDepth * uFarDistance);
@@ -66,7 +66,7 @@ void main() {
         vec3 h = normalize(eye - lDir);
         float cosTh = clamp(-dot(n, h), 0, 1);
         float cosTi = clamp(dot(n, lDir), 0, 1);
-        float specularIntensity = pow(cosTh, uShininess);
+        float specularIntensity = pow(cosTh, uShininess) * (uShininess + 2.0) / 8.0;
         vec4 lightingColors = diffuse + specular * specularIntensity;
         final_color += lightingColors * vec4(uLightIrradiance[i], 1) * cosTi * att;
 
@@ -76,7 +76,10 @@ void main() {
         float lightDepth = lightPosition.z;
 
         if (lightDepth > depth) {
-            final_color += vec4(uLightIrradiance[i], 1) * pow(clamp(dot(eye, normalize(lightPosition)), 0, 1), 1000);
+            float lightDirect = pow(clamp(dot(eye, normalize(lightPosition)), 0, 1), 1000);
+            if (lightDirect > 0.9) {
+                final_color += vec4(normalize(uLightIrradiance[i]), 1);
+            }
         }
     }
 

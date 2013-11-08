@@ -22,7 +22,7 @@ class GS_Init extends GameState {
     glClearColor(0f, 0f, 0f, 1f)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity
-    GLFrustum.setFrustrum(90, screenWidth, screenHeight, 0.1f, 20)
+    GLFrustum.setFrustrum(90, screenWidth, screenHeight, 0.1f, 1000)
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity
 
