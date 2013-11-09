@@ -6,6 +6,7 @@ import org.lwjgl.opengl.ARBVertexShader._
 import org.lwjgl.opengl.ARBShaderObjects._
 import org.lwjgl.opengl.GL11._
 import org.lwjgl.opengl.GL20._
+import java.nio.FloatBuffer
 
 class ShaderProgram(vert:VertexShader, frag:FragmentShader) {
   def this(vert:String, frag:String) = this(new VertexShader(vert), new FragmentShader(frag))
@@ -70,6 +71,10 @@ class ShaderProgram(vert:VertexShader, frag:FragmentShader) {
 
   def setUniform4f(name:String, x:Float, y:Float, z:Float, w:Float) {
     glUniform4f(glGetUniformLocation(id, name), x, y, z, w)
+  }
+
+  def setUniformMatrix4(name:String, buf:FloatBuffer) {
+    glUniformMatrix4(glGetUniformLocation(id, name), false, buf)
   }
 }
 

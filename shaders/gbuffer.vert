@@ -1,4 +1,4 @@
-#version 130
+#version 140
 
 in vec3 aCoord;
 in vec3 aNormal;
@@ -9,15 +9,18 @@ out vec3 normal;
 out float depth;
 out vec3 eyeVec;
 
+uniform mat4 uProjectionMatrix;
+uniform mat4 uModelViewMatrix;
+
 uniform float uFarDistance;
 
 void main() {
-    vec4 transformedCoord = gl_ModelViewMatrix * vec4(aCoord, 1.0);
-    vec4 finishedCoord = gl_ProjectionMatrix * transformedCoord;
+    vec4 transformedCoord = uModelViewMatrix * vec4(aCoord, 1.0);
+    vec4 finishedCoord = uProjectionMatrix * transformedCoord;
 
     texCoord = aTexCoord;
 
-    normal = gl_NormalMatrix * aNormal;
+    normal = (inverse(transpose(uModelViewMatrix)) * vec4(aNormal, 0)).xyz;
 
     eyeVec = finishedCoord;
 

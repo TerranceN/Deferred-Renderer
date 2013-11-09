@@ -20,12 +20,16 @@ import shaders._
 import models._
 import vectors._
 import lighting._
+import matricies._
 
 class GS_Game extends GameState {
-  class FallingLight(initPosition:Vector3, var velocity:Vector3, val initIrradiance:Vector3) {
+  val random = new Random
+
+  class FallingLight(initPosition:Vector3, var velocity:Vector3, var initIrradiance:Vector3) {
     val light = new Light(initIrradiance, initPosition);
     var life:Double = 1;
     var lifeDirection = 4;
+    var t:Double = 0;
 
     def update(deltaTime:Double) {
       //velocity += new Vector3(0, -10, 0) * deltaTime.toFloat
@@ -36,16 +40,22 @@ class GS_Game extends GameState {
         life = 50
         lifeDirection = -0
       }
+
+      t += (3 + random.nextDouble) * deltaTime;
+
       light.intensity = initIrradiance * (life.toFloat / 50)
     }
   }
 
   val normalMap = Texture.fromImage("assets/normal.jpg")
 
+
   val m = Model.fromFile("assets/crate_multitexture.dae")
   m.genBuffers()
+  val m3 = Model.fromFile("assets/crate_multitexture.dae")
+  m3.genBuffers()
   val level_geom = Model.fromFile("assets/test_level.dae")
-  val m2 = Model.fromFile("assets/sphere2.dae")
+  val m2 = Model.fromFile("assets/monkeyface.dae")
   m2.genBuffers()
   val sceneGraph = Level.fromModel(level_geom, 100)
   val screenVBO = glGenBuffers()
@@ -92,12 +102,13 @@ class GS_Game extends GameState {
   }
 
   def drawScreenVBO() {
-    glMatrixMode(GL_PROJECTION)
-    glPushMatrix()
-    glLoadIdentity()
-    glMatrixMode(GL_MODELVIEW)
-    glPushMatrix()
-    glLoadIdentity()
+    GLFrustum.pushProjection()
+    GLFrustum.projectionMatrix.setIdentity
+
+    GLFrustum.pushModelview()
+    GLFrustum.modelviewMatrix.setIdentity
+
+    setMatricies()
 
     val program = ShaderProgram.getActiveShader()
 
@@ -117,16 +128,18 @@ class GS_Game extends GameState {
     glDisableVertexAttribArray(aCoordLocation)
     glDisableVertexAttribArray(aTexCoordLocation)
 
-    glMatrixMode(GL_MODELVIEW)
-    glPopMatrix()
-    glMatrixMode(GL_PROJECTION)
-    glPopMatrix()
-    glMatrixMode(GL_MODELVIEW)
+    GLFrustum.popModelview()
+    GLFrustum.popProjection()
   }
 
   def update(deltaTime:Double) = {
-    y += 1 * deltaTime
-    angle += 40 * deltaTime
+    var delta = deltaTime
+    val lightIntensity = 30f
+    if (Keyboard.isKeyDown(Keyboard.KEY_S) || Keyboard.isKeyDown(Keyboard.KEY_A)) {
+      if (Keyboard.isKeyDown(Keyboard.KEY_A)) delta = -delta
+      y += 1 * delta
+      angle += 40 * delta
+    }
 
     val mouseLightDistance = 5
     var normalizedMouse = new Vector2(
@@ -139,8 +152,6 @@ class GS_Game extends GameState {
     val f = 1 / tan(hAngle / 2)
 
     val view = new Vector3((clip.x * GLFrustum.aspectRatio / f).toFloat, (clip.y / f).toFloat, -mouseLightDistance)
-
-    val lightIntensity = 20f
 
     if (!wasLeftButtonDown && Mouse.isButtonDown(0)) {
       lights = lights :+ new FallingLight(
@@ -183,7 +194,9 @@ class GS_Game extends GameState {
 
     var newLights:Array[FallingLight] = Array()
     for (l <- lights) {
-      l.update(deltaTime)
+      l.initIrradiance.y = (0.3 + abs(0.5 * sin(l.t) + 0.2 * sin(2 * l.t) + 0.2 * sin(3 * l.t)) * 0.3).toFloat * lightIntensity;
+
+      l.update(delta)
 
       if (l.life > 0) {
         newLights = newLights :+ l
@@ -202,35 +215,49 @@ class GS_Game extends GameState {
   }
 
   def drawGeometry() {
-    glMatrixMode(GL_MODELVIEW)
-    glPushMatrix()
-      glTranslated(0.0, 0, -10.4)
-      glRotated(90, 0, 1, 0)
+    GLFrustum.pushModelview()
+      GLFrustum.modelviewMatrix.multiplyBy(Matrix4.translate(0, 0, -10.4f))
+      GLFrustum.modelviewMatrix.multiplyBy(Matrix4.rotateY(Pi.toFloat / 2))
 
       //m.draw()
+      setMatricies()
       sceneGraph.draw()
       //Console.println("Number of model draws: " + sceneGraph.draw())
-    glPopMatrix()
+    GLFrustum.popModelview()
 
     ShaderProgram.getActiveShader.setUniform1f("uNormalMapTexture", 0.0f)
 
-    glPushMatrix()
+    GLFrustum.pushModelview()
+      GLFrustum.modelviewMatrix.multiplyBy(Matrix4.scale(0.5f, 0.5f, 0.5f))
+      GLFrustum.modelviewMatrix.multiplyBy(Matrix4.translate(1.5f, 2 * sin(y + Pi).toFloat, -8.0f))
+      GLFrustum.modelviewMatrix.multiplyBy(Matrix4.rotateY((angle * Pi / 180).toFloat))
       glTranslated(1.5, 2 * sin(y + 3.14), -8.0)
       glRotated(angle, 0, 1, 0)
 
+      setMatricies()
       m.draw()
-    glPopMatrix()
 
-    glPushMatrix()
-      glTranslated(-1.5, 2 * sin(y), -8.0)
-      glRotated(angle, 0, 1, 0)
+      GLFrustum.modelviewMatrix.multiplyBy(Matrix4.translate(1, 1, 1))
+      setMatricies()
+      m3.draw()
+    GLFrustum.popModelview()
 
+    GLFrustum.pushModelview()
+      GLFrustum.modelviewMatrix.multiplyBy(Matrix4.translate(-1.5f, 2 * sin(y).toFloat, -8.0f))
+      //GLFrustum.modelviewMatrix.multiplyBy(Matrix4.rotateY((angle * Pi / 180).toFloat))
+
+      setMatricies()
       m2.draw()
-    glPopMatrix()
+    GLFrustum.popModelview()
+  }
+
+  def setMatricies() {
+      ShaderProgram.activeShader.setUniformMatrix4("uProjectionMatrix", GLFrustum.projectionMatrix.getFloatBuffer)
+      ShaderProgram.activeShader.setUniformMatrix4("uModelViewMatrix", GLFrustum.modelviewMatrix.getFloatBuffer)
   }
 
   def draw() = {
-    glLoadIdentity
+    GLFrustum.modelviewMatrix.setIdentity()
     glClear(GL_COLOR_BUFFER_BIT)
     glClear(GL_DEPTH_BUFFER_BIT)
 
@@ -248,7 +275,13 @@ class GS_Game extends GameState {
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
+    gbuffer.bindForSSAOPass(GLFrustum.nearClippingPlane, GLFrustum.farClippingPlane)
+      ShaderProgram.activeShader.setUniformMatrix4("u3dProjectionMatrix", GLFrustum.projectionMatrix.getFloatBuffer)
+      drawScreenVBO()
+    gbuffer.unbindForSSAOPass()
+
     gbuffer.bindForLightPass(GLFrustum.nearClippingPlane, GLFrustum.farClippingPlane)
+      ShaderProgram.activeShader.setUniformMatrix4("u3dProjectionMatrix", GLFrustum.projectionMatrix.getFloatBuffer)
       val program = ShaderProgram.getActiveShader()
       var lightsToDraw = lights map (_.light)
 
@@ -265,7 +298,7 @@ class GS_Game extends GameState {
       val view = new Vector3((clip.x * GLFrustum.aspectRatio / f).toFloat, (clip.y / f).toFloat, -mouseLightDistance)
 
       if (mouseLightEnabled) {
-        lightsToDraw = lightsToDraw :+ new Light(new Vector3(1.0f, 1f, 0.8f) * 5, view)
+        lightsToDraw = lightsToDraw :+ new Light(new Vector3(1.0f, 1f, 0.8f) * 0.5f, view)
       }
 
       lightsToDraw.grouped(10) foreach { lst =>
